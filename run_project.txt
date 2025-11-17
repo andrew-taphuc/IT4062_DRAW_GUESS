@@ -1,0 +1,7 @@
+cd src/
+1. Cài đặt phụ thuộc 
+    make install-deps
+2. Tạo cơ sở dữ liệu
+    docker compose up -d 
+3. Truy cập vào cơ sở dữ liệu 
+    mysql --protocol=TCP -h 127.0.0.1 -P 3308 -u root -p (pass: 123456)
