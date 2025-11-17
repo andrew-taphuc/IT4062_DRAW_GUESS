@@ -1,13 +1,19 @@
 #include "../include/server.h"
+#include "../include/database.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 
 server_t server;
+db_connection_t* db = NULL;
 
 // Xử lý tín hiệu để dừng server một cách an toàn
 void signal_handler(int sig) {
     printf("\nNhận tín hiệu dừng, đang đóng server...\n");
+    if (db) {
+        db_disconnect(db);
+        db = NULL;
+    }
     server_cleanup(&server);
     exit(0);
 }
@@ -28,6 +34,16 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
     
+    // Kết nối đến database
+    // NOTE: pass the hostname (here localhost) as the first argument.
+    // The code in database.c currently uses port 3308 when calling mysql_real_connect
+    // so we connect to 127.0.0.1 (host) and port 3308 will be used inside db_connect.
+    db = db_connect("127.0.0.1", "root", "123456", "draw_guess");
+    if (!db) {
+        fprintf(stderr, "Không thể kết nối đến database. Server vẫn sẽ chạy nhưng không có database.\n");
+        // Tiếp tục chạy server dù không có database
+    }
+    
     // Khởi tạo server
     if (server_init(&server, port) < 0) {
         fprintf(stderr, "Không thể khởi tạo server\n");
@@ -45,6 +61,10 @@ int main(int argc, char *argv[]) {
     server_event_loop(&server);
     
     // Dọn dẹp (thường không đến đây vì vòng lặp vô hạn)
+    if (db) {
+        db_disconnect(db);
+        db = NULL;
+    }
     server_cleanup(&server);
     
     return 0;
