@@ -60,3 +60,20 @@ clean:
 	$(RM) $(TARGET)
 
 .PHONY: all clean
+
+docker-up:
+	docker compose up -d
+
+docker-recreate:
+	docker compose down -v
+	docker compose up -d
+
+install-deps:
+ifeq ($(UNAME_S),Darwin)
+	@echo "Installing dependencies for macOS..."
+	brew install mysql-client libwebsockets cjson openssl@3
+else
+	@echo "Installing dependencies for Linux/Windows..."
+	sudo apt update
+	sudo apt install -y build-essential gcc libmysqlclient-dev libcjson-dev mysql-client-core-8.0
+endif
