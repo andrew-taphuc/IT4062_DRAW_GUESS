@@ -92,3 +92,5 @@ temp/
 .DS_Store
 
 .clangd
+
+.vscode/c_cpp_properties.json
