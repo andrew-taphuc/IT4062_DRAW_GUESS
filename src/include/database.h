@@ -1,7 +1,7 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
-#include <mysql.h>
+#include <mysql/mysql.h>
 #include <stdarg.h>
 
 // Cấu trúc lưu thông tin kết nối database

@@ -31,7 +31,12 @@ CFLAGS = -Wall -Wextra -g
 # ============================
 
 # Tìm MySQL include directory
-MYSQL_INCLUDE := $(shell find /usr/local /opt/homebrew -name "mysql.h" 2>/dev/null | head -1 | xargs dirname)
+# Nếu mysql.h nằm trong thư mục con mysql/, lấy thư mục cha làm include path
+MYSQL_H_PATH := $(shell find /usr/local /opt/homebrew -name "mysql.h" 2>/dev/null | head -1)
+MYSQL_H_DIR := $(shell echo $(MYSQL_H_PATH) | xargs dirname)
+MYSQL_H_PARENT := $(shell echo $(MYSQL_H_DIR) | xargs dirname)
+# Kiểm tra nếu thư mục chứa mysql.h có tên là "mysql", thì dùng thư mục cha
+MYSQL_INCLUDE := $(shell if [ "$(shell basename $(MYSQL_H_DIR))" = "mysql" ]; then echo $(MYSQL_H_PARENT); else echo $(MYSQL_H_DIR); fi)
 
 # Tìm MySQL lib directory
 MYSQL_LIB_DIR := $(shell find /usr/local /opt/homebrew -name "libmysqlclient.*" 2>/dev/null | head -1 | xargs dirname)
@@ -78,7 +83,10 @@ LDFLAGS += -lmysqlclient -lzstd -lssl -lcrypto -lz
 # Nếu có mysql_config, dùng nó (đáng tin cậy nhất)
 MYSQL_CONFIG := $(shell which mysql_config 2>/dev/null || find /usr/local/mysql*/bin /opt/homebrew/bin -name "mysql_config" 2>/dev/null | head -1)
 ifneq ($(MYSQL_CONFIG),)
-    MYSQL_CFLAGS := $(shell $(MYSQL_CONFIG) --cflags)
+    MYSQL_CFLAGS_RAW := $(shell $(MYSQL_CONFIG) --cflags)
+    # Điều chỉnh include path: nếu kết thúc bằng /mysql, bỏ phần /mysql đi
+    # Ví dụ: -I/opt/homebrew/opt/mysql-client/include/mysql -> -I/opt/homebrew/opt/mysql-client/include
+    MYSQL_CFLAGS := $(shell echo "$(MYSQL_CFLAGS_RAW)" | sed 's|-I\([^ ]*/\)mysql |-I\1|g' | sed 's|-I\([^ ]*/\)mysql$$|-I\1|g')
     MYSQL_LDFLAGS := $(shell $(MYSQL_CONFIG) --libs)
     CFLAGS += $(MYSQL_CFLAGS)
     # Thêm MYSQL_LDFLAGS vào LDFLAGS thay vì ghi đè
@@ -159,7 +167,7 @@ docker-recreate:
 install-deps:
 ifeq ($(UNAME_S),Darwin)
 	@echo "Installing dependencies for macOS..."
-	brew install mysql-client libwebsockets cjson openssl@3 zstd
+	brew install mysql-client cjson zstd
 	@echo "Dependencies installed successfully!"
 else
 	@echo "Installing dependencies for Linux..."
@@ -172,44 +180,44 @@ endif
 #  Debug & Info
 # ============================
 
-debug-mysql:
-	@echo "=== MySQL Configuration Debug ==="
-	@echo "MYSQL_CONFIG:   $(MYSQL_CONFIG)"
-	@echo "MYSQL_INCLUDE:  $(MYSQL_INCLUDE)"
-	@echo "MYSQL_LIB_DIR:  $(MYSQL_LIB_DIR)"
-	@echo "ZSTD_LIB_DIR:   $(ZSTD_LIB_DIR)"
-	@echo "SSL_LIB_DIR:    $(SSL_LIB_DIR)"
-	@echo ""
-	@echo "=== Compiler Flags ==="
-	@echo "CFLAGS:  $(CFLAGS)"
-	@echo "LDFLAGS: $(LDFLAGS)"
-	@echo ""
-	@echo "=== Platform Info ==="
-	@echo "Platform: $(PLATFORM)"
-	@echo "System:   $(UNAME_S)"
+# debug-mysql:
+# 	@echo "=== MySQL Configuration Debug ==="
+# 	@echo "MYSQL_CONFIG:   $(MYSQL_CONFIG)"
+# 	@echo "MYSQL_INCLUDE:  $(MYSQL_INCLUDE)"
+# 	@echo "MYSQL_LIB_DIR:  $(MYSQL_LIB_DIR)"
+# 	@echo "ZSTD_LIB_DIR:   $(ZSTD_LIB_DIR)"
+# 	@echo "SSL_LIB_DIR:    $(SSL_LIB_DIR)"
+# 	@echo ""
+# 	@echo "=== Compiler Flags ==="
+# 	@echo "CFLAGS:  $(CFLAGS)"
+# 	@echo "LDFLAGS: $(LDFLAGS)"
+# 	@echo ""
+# 	@echo "=== Platform Info ==="
+# 	@echo "Platform: $(PLATFORM)"
+# 	@echo "System:   $(UNAME_S)"
 
-info:
-	@echo "=== Project Information ==="
-	@echo "Target:      $(TARGET)"
-	@echo "Source Dir:  $(SRC_DIR)"
-	@echo "Header Dir:  $(HEADER_DIR)"
-	@echo "Build Dir:   $(OBJ_DIR)"
-	@echo ""
-	@echo "=== Source Files ==="
-	@echo "$(SRCS)"
-	@echo ""
-	@echo "=== Object Files ==="
-	@echo "$(OBJS)"
+# info:
+# 	@echo "=== Project Information ==="
+# 	@echo "Target:      $(TARGET)"
+# 	@echo "Source Dir:  $(SRC_DIR)"
+# 	@echo "Header Dir:  $(HEADER_DIR)"
+# 	@echo "Build Dir:   $(OBJ_DIR)"
+# 	@echo ""
+# 	@echo "=== Source Files ==="
+# 	@echo "$(SRCS)"
+# 	@echo ""
+# 	@echo "=== Object Files ==="
+# 	@echo "$(OBJS)"
 
 # ============================
 #  Run & Test
 # ============================
 
-run: $(TARGET)
-	@echo "Running $(TARGET)..."
-	./$(TARGET)
+# run: $(TARGET)
+# 	@echo "Running $(TARGET)..."
+# 	./$(TARGET)
 
-rebuild: clean all
+# rebuild: clean all
 
 # ============================
 #  Phony Targets

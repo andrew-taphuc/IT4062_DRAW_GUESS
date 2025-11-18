@@ -90,3 +90,5 @@ temp/
 *.tmp
 *.log
 .DS_Store
+
+.clangd
