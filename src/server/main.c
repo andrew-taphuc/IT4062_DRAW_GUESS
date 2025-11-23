@@ -1,5 +1,6 @@
 #include "../include/server.h"
 #include "../include/database.h"
+#include "../include/auth.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -57,6 +58,30 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
+    //Test authentication module
+    if (db) {
+        
+        // Test đăng ký
+        char hash[65];
+        auth_hash_password("mypass123", hash);
+        int user_id = db_register_user(db, "demo_user", hash);
+        if(user_id > 0) {
+            printf("Đăng ký thành công: ID=%d\n", user_id);
+        } else {
+            printf("Đăng ký thất bại\n");
+        }
+        
+        // Test đăng nhập đúng
+        auth_hash_password("mypass123", hash);
+        db_authenticate_user(db, "demo_user", hash); 
+        
+        // Test đăng nhập sai
+        auth_hash_password("wrongpass", hash);
+        int wrong_id = db_authenticate_user(db, "demo_user", hash);
+        printf("Đăng nhập thất bại, ID trả về: %d\n", wrong_id);
+        
+    }
+
     // Bắt đầu vòng lặp sự kiện
     server_event_loop(&server);
     
