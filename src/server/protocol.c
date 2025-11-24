@@ -63,8 +63,7 @@ int protocol_create_message(uint8_t type, const uint8_t* payload, uint16_t paylo
 
     // Length (2 bytes, network byte order)
     uint16_t length_network = htons(payload_len);
-    buffer_out[1] = (length_network >> 8) & 0xFF;
-    buffer_out[2] = length_network & 0xFF;
+    memcpy(buffer_out + 1, &length_network, 2);
 
     // Payload
     if (payload && payload_len > 0) {
@@ -142,6 +141,37 @@ int protocol_send_register_response(int client_fd, uint8_t status, const char* m
 }
 
 /**
+ * Kiểm tra user đã đăng nhập và đang active không
+ * @param server Con trỏ đến server_t
+ * @param user_id User ID cần kiểm tra
+ * @param exclude_client_index Client index cần loại trừ (thường là client hiện tại)
+ * @return 1 nếu user đã đăng nhập và active, 0 nếu chưa
+ */
+static int protocol_is_user_already_logged_in(server_t* server, int user_id, int exclude_client_index) {
+    if (!server || user_id <= 0) {
+        return 0;
+    }
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        // Bỏ qua client hiện tại
+        if (i == exclude_client_index) {
+            continue;
+        }
+
+        client_t* client = &server->clients[i];
+        
+        // Kiểm tra client đang active, đã đăng nhập với cùng user_id và state = LOGGED_IN
+        if (client->active && 
+            client->user_id == user_id && 
+            client->state == CLIENT_STATE_LOGGED_IN) {
+            return 1;  // User đã đăng nhập
+        }
+    }
+
+    return 0;  // User chưa đăng nhập
+}
+
+/**
  * Xử lý LOGIN_REQUEST
  */
 static int protocol_handle_login(server_t* server, int client_index, const message_t* msg) {
@@ -190,6 +220,15 @@ static int protocol_handle_login(server_t* server, int client_index, const messa
     int user_id = db_authenticate_user(db, username, password_hash);
     
     if (user_id > 0) {
+        // Kiểm tra user đã đăng nhập và đang active chưa
+        if (protocol_is_user_already_logged_in(server, user_id, client_index)) {
+            // User đã đăng nhập ở client khác
+            protocol_send_login_response(client->fd, STATUS_ERROR, -1, "");
+            printf("Client %d đăng nhập thất bại: user_id=%d (username=%s) đã đăng nhập ở client khác\n", 
+                   client_index, user_id, username);
+            return -1;
+        }
+
         // Đăng nhập thành công
         client->user_id = user_id;
         strncpy(client->username, username, sizeof(client->username) - 1);

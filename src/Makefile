@@ -125,6 +125,13 @@ all: $(TARGET)
 	@echo "Built for: $(PLATFORM)"
 	@echo "Executable: $(TARGET)"
 
+# Test client
+# Tắt flag sinh ra .dSYM và .yml cho target này (không dùng -g, không sinh debug info)
+test_client: test_client.c
+	@echo "Building test client..."
+	$(CC) -Wall -Wextra -O2 -I$(HEADER_DIR) -Icommon test_client.c -o test_client
+	@echo "Test client built: ./test_client"
+
 $(TARGET): $(OBJS)
 	@echo "Linking $(TARGET)..."
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
@@ -148,6 +155,7 @@ clean:
 	@echo "Cleaning build artifacts..."
 	$(RM) $(OBJ_DIR)/*.o
 	$(RM) $(TARGET)
+	$(RM) test_client
 	@echo "Clean complete!"
 
 # ============================
