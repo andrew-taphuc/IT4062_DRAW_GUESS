@@ -114,7 +114,7 @@ OBJ_DIR = build
 TARGET = main$(EXE)
 
 # Source files
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/server.c $(SRC_DIR)/database.c $(SRC_DIR)/auth.c
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/server.c $(SRC_DIR)/database.c $(SRC_DIR)/auth.c $(SRC_DIR)/protocol.c
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 # ============================
@@ -131,9 +131,9 @@ $(TARGET): $(OBJS)
 	@echo "Build successful!"
 
 # Luật build object files
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADER_DIR)/server.h $(HEADER_DIR)/database.h $(HEADER_DIR)/auth.h | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	@echo "Compiling $<..."
-	$(CC) $(CFLAGS) -I$(HEADER_DIR) -c $< -o $@
+	$(CC) $(CFLAGS) -I$(HEADER_DIR) -Icommon -c $< -o $@
 
 # Create build directory
 $(OBJ_DIR):
