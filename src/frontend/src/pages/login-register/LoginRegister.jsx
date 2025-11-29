@@ -6,7 +6,7 @@ import RegisterForm from '../../components/RegisterForm';
 import AvatarSelector from '../../components/AvatarSelector';
 import './LoginRegister.css';
 
-export default function LoginRegister() {
+export default function LoginRegister({ onLoginSuccess }) {
   const [activeTab, setActiveTab] = useState('login');
   const [selectedAvatar, setSelectedAvatar] = useState('avt1.jpg');
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -97,7 +97,12 @@ export default function LoginRegister() {
       // Success will be handled by useEffect
       setLoginForm({ username: '', password: '' });
       setLoginErrors({});
-      alert('Đăng nhập thành công!');
+      // Chuyển sang trang lobby sau khi đăng nhập thành công
+      if (onLoginSuccess) {
+        setTimeout(() => {
+          onLoginSuccess();
+        }, 500);
+      }
     }
   };
 

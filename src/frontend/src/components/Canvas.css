@@ -1,0 +1,119 @@
+.canvas-container {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 80%;
+}
+
+.canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 12px;
+}
+
+.waiting-message {
+  text-align: center;
+  color: #666;
+}
+
+.waiting-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.waiting-message h3 {
+  font-size: 2rem;
+  color: #4a90e2;
+  margin-bottom: 10px;
+}
+
+.waiting-message p {
+  font-size: 1.2rem;
+  color: #999;
+}
+
+.canvas-tools {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-group label {
+  font-weight: 500;
+  color: #333;
+}
+
+.tool-group input[type="color"] {
+  width: 50px;
+  height: 40px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tool-group input[type="range"] {
+  width: 150px;
+}
+
+.tool-group span {
+  min-width: 40px;
+  font-weight: 500;
+  color: #666;
+}
+
+.clear-btn {
+  padding: 10px 20px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.clear-btn:hover:not(:disabled) {
+  background: #c0392b;
+  transform: translateY(-2px);
+}
+
+.clear-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.drawing-canvas {
+  flex: 1;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: crosshair;
+  background: white;
+  touch-action: none;
+}
+
+.drawing-canvas:disabled {
+  cursor: not-allowed;
+}
+

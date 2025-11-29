@@ -1,0 +1,260 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.game-room-page {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: url('/src/assets/background.jpeg');
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.game-room-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px),
+    radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 50px 50px, 100px 100px;
+  background-position: 0 0, 25px 25px;
+  opacity: 0.3;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Header */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 30px;
+  position: relative;
+  z-index: 1;
+}
+
+.header-left,
+.header-right {
+  flex: 1;
+}
+
+.header-center {
+  flex: 2;
+  text-align: center;
+}
+
+.back-btn {
+  background: #f0f0f0;
+  border: none;
+  color: #333;
+  font-size: 1rem;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.back-btn:hover {
+  background: #e0e0e0;
+}
+
+.game-logo {
+  font-size: 2rem; 
+  font-weight: bold; 
+  color: white; 
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: flex-end;
+}
+
+.timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #fff3e0;
+  border-radius: 20px;
+  font-weight: bold;
+  color: #e65100;
+}
+
+.timer-icon {
+  font-size: 1.2rem;
+}
+
+.timer-text {
+  font-size: 1.1rem;
+}
+
+.settings-btn,
+.exit-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.settings-btn:hover {
+  background: #f0f0f0;
+}
+
+.exit-btn:hover {
+  background: #ffebee;
+}
+
+/* Main Game Area */
+.game-main {
+  position: relative;
+  z-index: 1;
+  padding-left: 20px;
+  padding-right: 20px;
+  max-width: 1800px;
+  margin: 0 auto;
+  height: calc(100vh - 80px);
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 20px;
+  height: 100%;
+}
+
+.game-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.game-center {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* .game-status {
+  margin-bottom: 10px;
+} */
+
+.status-banner {
+  padding: 0px 20px;
+  border-radius: 12px;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+}
+
+.status-banner.waiting {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.status-banner.drawing {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.status-banner.guessing {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.status-banner h2 {
+  font-size: 1.4rem;
+  margin-bottom: 6px;
+}
+
+.status-banner p {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.word-display {
+  font-size: 2rem !important;
+  font-weight: bold;
+  letter-spacing: 4px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .game-layout {
+    grid-template-columns: 250px 1fr 280px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .game-layout {
+    grid-template-columns: 220px 1fr 250px;
+  }
+}
+
+@media (max-width: 968px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .game-sidebar.left {
+    order: 2;
+    max-height: 200px;
+  }
+
+  .game-center {
+    order: 1;
+  }
+
+  .game-sidebar.right {
+    order: 3;
+    max-height: 300px;
+  }
+
+  .game-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .header-left,
+  .header-right,
+  .header-center {
+    width: 100%;
+  }
+
+  .game-info {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .game-main {
+    padding: 10px;
+  }
+
+  .game-layout {
+    gap: 10px;
+  }
+
+  .status-banner h2 {
+    font-size: 1.4rem;
+  }
+
+  .status-banner p {
+    font-size: 1rem;
+  }
+
+  .word-display {
+    font-size: 1.5rem !important;
+  }
+}
+
