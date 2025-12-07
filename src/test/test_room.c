@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include "include/room.h"
-#include "include/server.h"
+#include "../include/room.h"
+#include "../include/server.h"
 
 void test_room_create() {
     printf("Test 1: Tạo phòng\n");
