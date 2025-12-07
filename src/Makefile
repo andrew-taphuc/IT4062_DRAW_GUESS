@@ -120,55 +120,13 @@ SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/server.c $(SRC_DIR)/database.c $(SRC_DIR)/au
 
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-# Test room
-TEST_ROOM = test_room$(EXE)
-TEST_ROOM_SRC = test_room.c
-TEST_ROOM_OBJS = $(OBJ_DIR)/room.o
-
 # ============================
 #  Build rules
 # ============================
 
-all: $(TARGET) test_client room_test test_room drawing_test
+all: $(TARGET)
 	@echo "Built for: $(PLATFORM)"
-	@echo "Executables: $(TARGET), test_client, room_test, $(TEST_ROOM), drawing_test"
-
-# Test client
-# Tắt flag sinh ra .dSYM và .yml cho target này (không dùng -g, không sinh debug info)
-test_client: test_client.c
-	@echo "Building test client..."
-	$(CC) -Wall -Wextra -O2 -I$(HEADER_DIR) -Icommon test_client.c -o test_client
-	@echo "Test client built: ./test_client"
-
-# Test room protocol
-room_test: room_test.c
-	@echo "Building room protocol test..."
-	$(CC) -Wall -Wextra -O2 -I$(HEADER_DIR) -Icommon room_test.c -o room_test -lpthread
-	@echo "Room test built: ./room_test"
-	@echo "Run with: ./room_test"
-
-# Test room module
-# Tắt flag debug để không sinh ra .dSYM
-test_room: $(TEST_ROOM_OBJS) $(TEST_ROOM_SRC)
-	@echo "Building room module test..."
-	$(CC) -Wall -Wextra -O2 -I$(HEADER_DIR) $(TEST_ROOM_SRC) $(TEST_ROOM_OBJS) -o $(TEST_ROOM)
-	@echo "Test room built: ./$(TEST_ROOM)"
-	@echo "Run with: ./$(TEST_ROOM)"
-
-# Test drawing module
-# Tắt flag debug để không sinh ra .dSYM
-test_drawing: $(OBJ_DIR)/drawing.o test_drawing.c
-	@echo "Building drawing module test..."
-	$(CC) -Wall -Wextra -O2 -I$(HEADER_DIR) test_drawing.c $(OBJ_DIR)/drawing.o -o test_drawing
-	@echo "Test drawing built: ./test_drawing"
-	@echo "Run with: ./test_drawing"
-
-# Test drawing protocol
-drawing_test: $(OBJ_DIR)/drawing.o drawing_test.c
-	@echo "Building drawing protocol test..."
-	$(CC) -Wall -Wextra -O2 -I$(HEADER_DIR) -Icommon drawing_test.c $(OBJ_DIR)/drawing.o -o drawing_test
-	@echo "Drawing test built: ./drawing_test"
-	@echo "Run with: ./drawing_test send <username> <password> <action> <x1> <y1> <x2> <y2> <color> <width>"
+	@echo "Executables: $(TARGET)"
 
 $(TARGET): $(OBJS)
 	@echo "Linking $(TARGET)..."
@@ -193,13 +151,6 @@ clean:
 	@echo "Cleaning build artifacts..."
 	$(RM) $(OBJ_DIR)/*.o
 	$(RM) $(TARGET)
-	$(RM) test_client
-	$(RM) room_test
-	$(RM) $(TEST_ROOM)
-	$(RM) test_room
-	$(RM) test_room.exe
-	$(RM) test_drawing
-	$(RM) drawing_test
 	@echo "Clean complete!"
 
 # ============================
@@ -234,52 +185,5 @@ else
 	sudo apt install -y build-essential gcc libmysqlclient-dev libcjson-dev mysql-client-core-8.0 libzstd-dev libssl-dev zlib1g-dev
 	@echo "Dependencies installed successfully!"
 endif
-
-# ============================
-#  Debug & Info
-# ============================
-
-# debug-mysql:
-# 	@echo "=== MySQL Configuration Debug ==="
-# 	@echo "MYSQL_CONFIG:   $(MYSQL_CONFIG)"
-# 	@echo "MYSQL_INCLUDE:  $(MYSQL_INCLUDE)"
-# 	@echo "MYSQL_LIB_DIR:  $(MYSQL_LIB_DIR)"
-# 	@echo "ZSTD_LIB_DIR:   $(ZSTD_LIB_DIR)"
-# 	@echo "SSL_LIB_DIR:    $(SSL_LIB_DIR)"
-# 	@echo ""
-# 	@echo "=== Compiler Flags ==="
-# 	@echo "CFLAGS:  $(CFLAGS)"
-# 	@echo "LDFLAGS: $(LDFLAGS)"
-# 	@echo ""
-# 	@echo "=== Platform Info ==="
-# 	@echo "Platform: $(PLATFORM)"
-# 	@echo "System:   $(UNAME_S)"
-
-# info:
-# 	@echo "=== Project Information ==="
-# 	@echo "Target:      $(TARGET)"
-# 	@echo "Source Dir:  $(SRC_DIR)"
-# 	@echo "Header Dir:  $(HEADER_DIR)"
-# 	@echo "Build Dir:   $(OBJ_DIR)"
-# 	@echo ""
-# 	@echo "=== Source Files ==="
-# 	@echo "$(SRCS)"
-# 	@echo ""
-# 	@echo "=== Object Files ==="
-# 	@echo "$(OBJS)"
-
-# ============================
-#  Run & Test
-# ============================
-
-# run: $(TARGET)
-# 	@echo "Running $(TARGET)..."
-# 	./$(TARGET)
-
-# rebuild: clean all
-
-# ============================
-#  Phony Targets
-# ============================
 
 .PHONY: all clean docker-up docker-down docker-recreate install-deps debug-mysql info run rebuild

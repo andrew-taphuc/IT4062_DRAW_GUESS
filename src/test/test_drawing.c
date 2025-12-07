@@ -1,4 +1,4 @@
-#include "include/drawing.h"
+#include "../include/drawing.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>

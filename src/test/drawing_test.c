@@ -1,5 +1,5 @@
-#include "common/protocol.h"
-#include "include/drawing.h"
+#include "../common/protocol.h"
+#include "../include/drawing.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
