@@ -1,12 +1,12 @@
 const WebSocket = require('ws');
 const net = require('net');
 const http = require('http');
-const { 
-    MessageBuffer, 
-    Logger, 
-    TcpConnectionManager, 
-    MessageValidator, 
-    PerformanceMonitor 
+const {
+    MessageBuffer,
+    Logger,
+    TcpConnectionManager,
+    MessageValidator,
+    PerformanceMonitor
 } = require('./utils');
 
 class Gateway {
@@ -24,9 +24,9 @@ class Gateway {
     start() {
         // Tạo HTTP server để phục vụ WebSocket
         this.httpServer = http.createServer();
-        
+
         // Tạo WebSocket server
-        this.wsServer = new WebSocket.Server({ 
+        this.wsServer = new WebSocket.Server({
             server: this.httpServer,
             perMessageDeflate: false
         });
@@ -58,40 +58,13 @@ class Gateway {
                     try {
                         // Sử dụng message buffer để xử lý data có thể bị phân mảnh
                         const messages = messageBuffer.addData(data);
-                        
+
                         messages.forEach(messageData => {
-                            // Kiểm tra message type để quyết định gửi binary hay JSON
-                            if (messageData.length >= 1) {
-                                const msgType = messageData.readUInt8(0);
-                                
-                                // Nếu là binary messages (DRAW_BROADCAST, DRAW_DATA, LOGIN_RESPONSE, etc.), gửi binary
-                                // LOGIN_RESPONSE (0x02), DRAW_DATA (0x22), DRAW_BROADCAST (0x23) và các message khác
-                                // Client HTML đang mong đợi binary cho tất cả messages
-                                if (msgType === 0x02 || msgType === 0x22 || msgType === 0x23 || 
-                                    msgType === 0x04 || msgType === 0x11 || msgType === 0x15) {
-                                    // Gửi binary trực tiếp
-                                    if (ws.readyState === WebSocket.OPEN) {
-                                        ws.send(messageData);
-                                        this.performanceMonitor.incrementMessagesSent();
-                                        Logger.debug(`Forwarded binary message type 0x${msgType.toString(16)} to WebSocket`);
-                                    }
-                                } else {
-                                    // Parse thành JSON và gửi
-                                    try {
-                                        const message = this.parseTcpMessage(messageData);
-                                        if (ws.readyState === WebSocket.OPEN) {
-                                            ws.send(JSON.stringify(message));
-                                            this.performanceMonitor.incrementMessagesSent();
-                                        }
-                                    } catch (parseError) {
-                                        // Nếu không parse được, gửi binary
-                                        Logger.warn('Could not parse message, sending as binary');
-                                        if (ws.readyState === WebSocket.OPEN) {
-                                            ws.send(messageData);
-                                            this.performanceMonitor.incrementMessagesSent();
-                                        }
-                                    }
-                                }
+                            const message = this.parseTcpMessage(messageData);
+                            Logger.info(`[Gateway] Sending message to WebSocket client: ${message.type}`, message);
+                            if (ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify(message));
+                                this.performanceMonitor.incrementMessagesSent();
                             }
                         });
                     } catch (error) {
@@ -131,52 +104,32 @@ class Gateway {
         // Xử lý tin nhắn từ WebSocket client
         ws.on('message', async (data) => {
             try {
-                // Kiểm tra nếu là binary message (ArrayBuffer hoặc Buffer)
-                if (Buffer.isBuffer(data) || data instanceof ArrayBuffer) {
-                    // Binary message - pass through trực tiếp
-                    Logger.debug('Received binary message, forwarding to TCP');
-                    this.performanceMonitor.incrementMessagesReceived();
-                    
-                    if (!isConnected) {
-                        await connectToTcpServer();
-                    }
-                    
-                    if (isConnected && tcpClient && tcpClient.writable) {
-                        const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
-                        tcpClient.write(buffer);
-                        Logger.debug('Forwarded binary message to TCP server');
-                    } else {
-                        Logger.warn('Cannot forward binary message - TCP not connected');
-                    }
+                const message = JSON.parse(data.toString());
+                Logger.debug('Received WebSocket message:', message);
+                this.performanceMonitor.incrementMessagesReceived();
+
+                // Validate message
+                MessageValidator.validateWebSocketMessage(message);
+
+                if (!isConnected) {
+                    await connectToTcpServer();
+                }
+
+                if (isConnected) {
+                    this.forwardToTcpServer(tcpClient, message);
                 } else {
-                    // JSON message - parse và convert
-                    const message = JSON.parse(data.toString());
-                    Logger.debug('Received WebSocket message:', message);
-                    this.performanceMonitor.incrementMessagesReceived();
-                    
-                    // Validate message
-                    MessageValidator.validateWebSocketMessage(message);
-                    
-                    if (!isConnected) {
-                        await connectToTcpServer();
-                    }
-                    
-                    if (isConnected) {
-                        this.forwardToTcpServer(tcpClient, message);
-                    } else {
-                        Logger.warn('Cannot forward message - TCP not connected');
-                        ws.send(JSON.stringify({
-                            type: 'error',
-                            data: { message: 'Server temporarily unavailable' }
-                        }));
-                    }
+                    Logger.warn('Cannot forward message - TCP not connected');
+                    ws.send(JSON.stringify({
+                        type: 'error',
+                        data: { message: 'Server temporarily unavailable' }
+                    }));
                 }
             } catch (error) {
                 Logger.error('Error handling WebSocket message:', error);
                 this.performanceMonitor.incrementErrors();
-                
-                // Send error back to client (chỉ nếu là JSON connection)
-                if (ws.readyState === WebSocket.OPEN && !Buffer.isBuffer(data) && !(data instanceof ArrayBuffer)) {
+
+                // Send error back to client
+                if (ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({
                         type: 'error',
                         data: { message: error.message || 'Invalid message format' }
@@ -225,6 +178,7 @@ class Gateway {
     // Tạo binary message theo protocol C server
     createTcpMessage(message) {
         const type = this.getMessageType(message.type);
+        Logger.debug(`Creating TCP message: type="${message.type}" -> 0x${type.toString(16)}`);
         let payload = Buffer.alloc(0);
 
         switch (message.type) {
@@ -233,6 +187,21 @@ class Gateway {
                 break;
             case 'register':
                 payload = this.createRegisterPayload(message.data);
+                break;
+            case 'logout':
+                payload = this.createLogoutPayload(message.data);
+                break;
+            case 'room_list':
+                payload = this.createRoomListPayload(message.data);
+                break;
+            case 'create_room':
+                payload = this.createCreateRoomPayload(message.data);
+                break;
+            case 'join_room':
+                payload = this.createJoinRoomPayload(message.data);
+                break;
+            case 'leave_room':
+                payload = this.createLeaveRoomPayload(message.data);
                 break;
             // import các case khác ở đây
             default:
@@ -257,16 +226,16 @@ class Gateway {
 
         const type = data.readUInt8(0);
         const length = data.readUInt16BE(1);
-        
+
         if (data.length < 3 + length) {
             throw new Error('Incomplete message');
         }
 
         const payload = data.slice(3, 3 + length);
         const messageType = this.getMessageTypeName(type);
-        
+
         let parsedData = {};
-        
+
         switch (type) {
             case 0x02: // LOGIN_RESPONSE
                 parsedData = this.parseLoginResponse(payload);
@@ -274,7 +243,24 @@ class Gateway {
             case 0x04: // REGISTER_RESPONSE
                 parsedData = this.parseRegisterResponse(payload);
                 break;
-            // import các case khác ở đây
+            case 0x11: // ROOM_LIST_RESPONSE
+                parsedData = this.parseRoomListResponse(payload);
+                break;
+            case 0x12: // CREATE_ROOM_RESPONSE
+                parsedData = this.parseCreateRoomResponse(payload);
+                break;
+            case 0x13: // JOIN_ROOM_RESPONSE
+                parsedData = this.parseJoinRoomResponse(payload);
+                break;
+            case 0x14: // LEAVE_ROOM_RESPONSE
+                parsedData = this.parseLeaveRoomResponse(payload);
+                break;
+            case 0x15: // ROOM_UPDATE
+                parsedData = this.parseRoomUpdate(payload);
+                break;
+            case 0x17: // ROOM_PLAYERS_UPDATE
+                parsedData = this.parseRoomPlayersUpdate(payload);
+                break;
             default:
                 Logger.warn('Unknown message type from server:', type);
                 parsedData = { raw: payload.toString('hex') };
@@ -290,18 +276,33 @@ class Gateway {
     getMessageType(typeName) {
         const types = {
             'login': 0x01,
+            'logout': 0x05,
             'register': 0x03,
+            'room_list': 0x10,
+            'create_room': 0x12,
+            'join_room': 0x13,
+            'leave_room': 0x14,
             // import các message khác ở đây
         };
-        return types[typeName] || 0x00;
+
+        const result = types[typeName];
+        if (!result) {
+            Logger.warn(`getMessageType: Unknown message type: "${typeName}"`);
+        }
+
+        return result || 0x00;
     }
 
     getMessageTypeName(type) {
         const types = {
             0x02: 'login_response',
             0x04: 'register_response',
-            0x22: 'draw_data',
-            0x23: 'draw_broadcast',
+            0x11: 'room_list_response',
+            0x12: 'create_room_response',
+            0x13: 'join_room_response',
+            0x14: 'leave_room_response',
+            0x15: 'room_update',
+            0x17: 'room_players_update',
             // import các message khác ở đây
         };
         return types[type] || 'unknown';
@@ -322,28 +323,182 @@ class Gateway {
         return buffer;
     }
 
+    createLogoutPayload() {
+        return Buffer.alloc(0);
+    }
+
+    createRoomListPayload() {
+        return Buffer.alloc(0);
+    }
+
+    createCreateRoomPayload(data) {
+        const buffer = Buffer.alloc(34); // 32 + 1 + 1
+        buffer.write(data.room_name || '', 0, 32, 'utf8');
+        buffer.writeUInt8(data.max_players || 2, 32);
+        buffer.writeUInt8(data.rounds || 1, 33);
+        return buffer;
+    }
+
+    createJoinRoomPayload(data) {
+        const buffer = Buffer.alloc(4);
+        buffer.writeInt32BE(data.room_id, 0);
+        return buffer;
+    }
+
+    createLeaveRoomPayload(data) {
+        const buffer = Buffer.alloc(4);
+        buffer.writeInt32BE(data.room_id, 0);
+        return buffer;
+    }
+
     // import các play load khác ở đây
 
     // Payload parsers
     parseLoginResponse(payload) {
         const status = payload.readUInt8(0);
-        const userId = payload.readInt32BE(1);
-        const username = payload.slice(5, 37).toString('utf8').replace(/\0/g, '');
-        
+        const userId = payload.readInt32BE(1);  // NodeJS handle signed automatically
+        const username = payload.toString('utf8', 5, 37).replace(/\0/g, '');
         return {
             status: status === 0 ? 'success' : 'error',
-            userId: userId,
-            username: username
+            userId,
+            username
         };
     }
 
     parseRegisterResponse(payload) {
         const status = payload.readUInt8(0);
         const message = payload.slice(1, 129).toString('utf8').replace(/\0/g, '');
-        
+
         return {
             status: status === 0 ? 'success' : 'error',
             message: message
+        };
+    }
+
+    parseRoomListResponse(payload) {
+        const roomCount = payload.readUInt16BE(0);
+        const rooms = [];
+        let offset = 2;
+
+        for (let i = 0; i < roomCount; i++) {
+            // Read room_id as UInt32BE and convert to signed if needed
+            const room_id_raw = payload.readUInt32BE(offset);
+            const room_id = room_id_raw > 0x7FFFFFFF ? room_id_raw - 0x100000000 : room_id_raw;
+
+            const room_name = payload.slice(offset + 4, offset + 36).toString('utf8').replace(/\0/g, '');
+            const player_count = payload.readUInt8(offset + 36);
+            const max_players = payload.readUInt8(offset + 37);
+            const state = payload.readUInt8(offset + 38);
+
+            // Read owner_id similarly
+            const owner_id_raw = payload.readUInt32BE(offset + 39);
+            const owner_id = owner_id_raw > 0x7FFFFFFF ? owner_id_raw - 0x100000000 : owner_id_raw;
+
+            rooms.push({ room_id, room_name, player_count, max_players, state, owner_id });
+            offset += 43;
+        }
+        return { room_count: roomCount, rooms };
+    }
+
+    parseCreateRoomResponse(payload) {
+        const status = payload.readUInt8(0);
+        // C server sends htonl((uint32_t)room_id), so read as UInt32BE then convert to signed
+        const room_id_raw = payload.readUInt32BE(1);
+        const room_id = room_id_raw > 0x7FFFFFFF ? room_id_raw - 0x100000000 : room_id_raw;
+        const message = payload.slice(5, 133).toString('utf8').replace(/\0/g, '');
+
+        return { status: status === 0 ? 'success' : 'error', room_id, message };
+    }
+
+    parseJoinRoomResponse(payload) {
+        const status = payload.readUInt8(0);
+        // C server sends htonl((uint32_t)room_id), so read as UInt32BE then convert to signed
+        const room_id_raw = payload.readUInt32BE(1);
+        const room_id = room_id_raw > 0x7FFFFFFF ? room_id_raw - 0x100000000 : room_id_raw;
+        const message = payload.slice(5, 133).toString('utf8').replace(/\0/g, '');
+        return { status: status === 0 ? 'success' : 'error', room_id, message };
+    }
+
+    parseLeaveRoomResponse(payload) {
+        const status = payload.readUInt8(0);
+        const message = payload.slice(1, 129).toString('utf8').replace(/\0/g, '');
+        return { status: status === 0 ? 'success' : 'error', message };
+    }
+
+    parseRoomUpdate(payload) {
+        // room_info_protocol_t structure
+        const room_id_raw = payload.readUInt32BE(0);
+        const room_id = room_id_raw > 0x7FFFFFFF ? room_id_raw - 0x100000000 : room_id_raw;
+
+        const room_name = payload.slice(4, 36).toString('utf8').replace(/\0/g, '');
+        const player_count = payload.readUInt8(36);
+        const max_players = payload.readUInt8(37);
+        const state = payload.readUInt8(38);
+
+        const owner_id_raw = payload.readUInt32BE(39);
+        const owner_id = owner_id_raw > 0x7FFFFFFF ? owner_id_raw - 0x100000000 : owner_id_raw;
+
+        return { room_id, room_name, player_count, max_players, state, owner_id };
+    }
+
+    parseRoomPlayersUpdate(payload) {
+        let offset = 0;
+
+        // room_players_update_t structure
+        const room_id_raw = payload.readUInt32BE(offset);
+        const room_id = room_id_raw > 0x7FFFFFFF ? room_id_raw - 0x100000000 : room_id_raw;
+        offset += 4;
+
+        const room_name = payload.slice(offset, offset + 32).toString('utf8').replace(/\0/g, '');
+        offset += 32;
+
+        const max_players = payload.readUInt8(offset++);
+        const state = payload.readUInt8(offset++);
+
+        const owner_id_raw = payload.readUInt32BE(offset);
+        const owner_id = owner_id_raw > 0x7FFFFFFF ? owner_id_raw - 0x100000000 : owner_id_raw;
+        offset += 4;
+
+        const action = payload.readUInt8(offset++); // 0 = JOIN, 1 = LEAVE
+
+        const changed_user_id_raw = payload.readUInt32BE(offset);
+        const changed_user_id = changed_user_id_raw > 0x7FFFFFFF ? changed_user_id_raw - 0x100000000 : changed_user_id_raw;
+        offset += 4;
+
+        const changed_username = payload.slice(offset, offset + 32).toString('utf8').replace(/\0/g, '');
+        offset += 32;
+
+        const player_count = payload.readUInt16BE(offset);
+        offset += 2;
+
+        // Parse players list
+        const players = [];
+        for (let i = 0; i < player_count; i++) {
+            const user_id_raw = payload.readUInt32BE(offset);
+            const user_id = user_id_raw > 0x7FFFFFFF ? user_id_raw - 0x100000000 : user_id_raw;
+            offset += 4;
+
+            const username = payload.slice(offset, offset + 32).toString('utf8').replace(/\0/g, '');
+            offset += 32;
+
+            const is_owner = payload.readUInt8(offset++);
+
+            players.push({ user_id, username, is_owner });
+        }
+
+        Logger.info('room infor and data players:', { room_id, room_name, max_players, state, owner_id, action, changed_user_id, changed_username, player_count, players });
+
+        return {
+            room_id,
+            room_name,
+            max_players,
+            state,
+            owner_id,
+            action, // 0 = JOIN, 1 = LEAVE
+            changed_user_id,
+            changed_username,
+            player_count,
+            players
         };
     }
 
@@ -363,7 +518,7 @@ class Gateway {
             }
         });
         this.clients.clear();
-        
+
         Logger.info('Gateway stopped successfully');
     }
 }
