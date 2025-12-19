@@ -10,6 +10,7 @@ db_connection_t* db = NULL;
 
 // Xử lý tín hiệu để dừng server một cách an toàn
 void signal_handler(int sig) {
+    (void)sig; // Suppress unused parameter warning
     printf("\nNhận tín hiệu dừng, đang đóng server...\n");
     if (db) {
         db_disconnect(db);
@@ -52,9 +53,19 @@ int main(int argc, char *argv[]) {
             "../data/words.txt",
             NULL
         };
+        int loaded = -1;
+        int tried = 0;
         for (int i = 0; candidates[i]; i++) {
-            int loaded = db_load_words_from_file(db, candidates[i]);
-            if (loaded >= 0) break;
+            loaded = db_load_words_from_file(db, candidates[i]);
+            tried++;
+            if (loaded >= 0) {
+                // Thành công, không cần thử tiếp
+                break;
+            }
+        }
+        // Chỉ in cảnh báo nếu tất cả các path đều thất bại
+        if (loaded < 0 && tried > 0) {
+            fprintf(stderr, "Cảnh báo: Không thể tìm thấy file words.txt ở bất kỳ vị trí nào đã thử.\n");
         }
     }
     
@@ -74,25 +85,25 @@ int main(int argc, char *argv[]) {
     //Test authentication module
     if (db) {
         
-        // Test đăng ký
+        // Test đăng ký cho demo_user
         char hash[65];
         auth_hash_password("mypass123", hash);
         int user_id = db_register_user(db, "demo_user", hash);
         if(user_id > 0) {
             printf("Đăng ký thành công: ID=%d\n", user_id);
         } else {
-            printf("Đăng ký thất bại\n");
+            printf("Đăng ký thất bại cho demo_user\n");
         }
-        
-        // Test đăng nhập đúng
-        auth_hash_password("mypass123", hash);
-        db_authenticate_user(db, "demo_user", hash); 
-        
-        // Test đăng nhập sai
-        auth_hash_password("wrongpass", hash);
-        int wrong_id = db_authenticate_user(db, "demo_user", hash);
-        printf("Đăng nhập thất bại, ID trả về: %d\n", wrong_id);
-        
+
+        // Đăng ký thêm tài khoản taphuc1 với mật khẩu phuc1234
+        char hash2[65];
+        auth_hash_password("phuc1234", hash2);
+        int user_id2 = db_register_user(db, "taphuc1", hash2);
+        if(user_id2 > 0) {
+            printf("Đăng ký thành công: ID=%d cho tài khoản taphuc1\n", user_id2);
+        } else {
+            printf("Đăng ký thất bại cho tài khoản taphuc1\n");
+        }
     }
 
     // Bắt đầu vòng lặp sự kiện

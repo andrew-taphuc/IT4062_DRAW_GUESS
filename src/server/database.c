@@ -271,7 +271,8 @@ int db_load_words_from_file(db_connection_t* db, const char* filepath) {
 
     FILE* f = fopen(filepath, "r");
     if (!f) {
-        fprintf(stderr, "db_load_words_from_file: không mở được file: %s\n", filepath);
+        // Không in cảnh báo ở đây vì có thể đang thử nhiều path
+        // Caller sẽ xử lý việc in cảnh báo nếu tất cả đều thất bại
         return -1;
     }
 
@@ -373,13 +374,48 @@ int db_get_random_word(db_connection_t* db, const char* difficulty, char* out_wo
 // Phase 6 (21-24): Persistence
 // ---------------------------
 
+// Helper function to check if a column exists in a table
+static int db_column_exists(db_connection_t* db, const char* table_name, const char* column_name) {
+    if (!db || !db->conn || !table_name || !column_name) return 0;
+    
+    char query[512];
+    snprintf(query, sizeof(query),
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+        "WHERE TABLE_SCHEMA = DATABASE() "
+        "AND TABLE_NAME = '%s' AND COLUMN_NAME = '%s'",
+        table_name, column_name);
+    
+    MYSQL_RES* result = db_execute_query(db, query);
+    if (!result) return 0;
+    
+    MYSQL_ROW row = mysql_fetch_row(result);
+    int exists = (row && row[0] && atoi(row[0]) > 0);
+    mysql_free_result(result);
+    
+    return exists;
+}
+
+// Helper function to safely add a column if it doesn't exist
+static void db_add_column_if_not_exists(db_connection_t* db, const char* table_name, 
+                                        const char* column_name, const char* column_def) {
+    if (!db || !db->conn || !table_name || !column_name || !column_def) return;
+    
+    if (!db_column_exists(db, table_name, column_name)) {
+        char query[512];
+        snprintf(query, sizeof(query), 
+            "ALTER TABLE %s ADD COLUMN %s %s",
+            table_name, column_name, column_def);
+        db_execute_query(db, query);
+    }
+}
+
 int db_ensure_schema(db_connection_t* db) {
     if (!db || !db->conn) return -1;
 
-    // Add aggregate columns if missing (MySQL 8+ supports IF NOT EXISTS)
-    db_execute_query(db, "ALTER TABLE users ADD COLUMN IF NOT EXISTS total_games INT NOT NULL DEFAULT 0");
-    db_execute_query(db, "ALTER TABLE users ADD COLUMN IF NOT EXISTS total_wins INT NOT NULL DEFAULT 0");
-    db_execute_query(db, "ALTER TABLE users ADD COLUMN IF NOT EXISTS total_score INT NOT NULL DEFAULT 0");
+    // Add aggregate columns if missing (check first, then add)
+    db_add_column_if_not_exists(db, "users", "total_games", "INT NOT NULL DEFAULT 0");
+    db_add_column_if_not_exists(db, "users", "total_wins", "INT NOT NULL DEFAULT 0");
+    db_add_column_if_not_exists(db, "users", "total_score", "INT NOT NULL DEFAULT 0");
 
     // Ensure rooms table exists (simple; may already exist)
     db_execute_query(db,
