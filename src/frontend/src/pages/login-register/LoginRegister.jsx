@@ -162,7 +162,7 @@ export default function LoginRegister({ onLoginSuccess }) {
         <div className="container">
           {/* Play Now Section */}
           <div className="play-section">
-            <h2>CHƠI NGAY</h2>
+            <h2>CHƠI LUÔN NHỈ ?</h2>
             
             {/* Message Display */}
             {message.text && (
