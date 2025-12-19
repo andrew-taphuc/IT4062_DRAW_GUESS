@@ -38,7 +38,7 @@ int server_init(server_t *server, int port) {
     // Cấu hình địa chỉ
     memset(&server->address, 0, sizeof(server->address));
     server->address.sin_family = AF_INET;
-    server->address.sin_addr.s_addr = INADDR_ANY;
+    server->address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     server->address.sin_port = htons(port);
 
     // Bind socket
