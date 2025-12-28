@@ -80,6 +80,8 @@ int server_add_client(server_t *server, int client_fd) {
             server->clients[i].active = 1;
             server->clients[i].user_id = -1;
             server->clients[i].username[0] = '\0';
+            strncpy(server->clients[i].avatar, "avt1.jpg", sizeof(server->clients[i].avatar) - 1);
+            server->clients[i].avatar[sizeof(server->clients[i].avatar) - 1] = '\0';
             server->clients[i].state = CLIENT_STATE_LOGGED_OUT;
             server->client_count++;
             

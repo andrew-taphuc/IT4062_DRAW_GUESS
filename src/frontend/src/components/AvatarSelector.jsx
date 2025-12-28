@@ -41,7 +41,7 @@ export default function AvatarSelector({
                 <div 
                   className="avatar-item-img"
                   style={{
-                    backgroundImage: `url(/src/assets/avt/${avatar})`
+                    backgroundImage: `url(/assets/avt/${avatar})`
                   }}
                 ></div>
               </div>

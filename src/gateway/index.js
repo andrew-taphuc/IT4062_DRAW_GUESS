@@ -377,9 +377,10 @@ class Gateway {
 
     // Payload creators
     createLoginPayload(data) {
-        const buffer = Buffer.alloc(64); // 32 + 32
+        const buffer = Buffer.alloc(96); // 32 + 32 + 32 (username + password + avatar)
         buffer.write(data.username || '', 0, 32, 'utf8');
         buffer.write(data.password || '', 32, 32, 'utf8');
+        buffer.write(data.avatar || 'avt1.jpg', 64, 32, 'utf8'); // Thêm avatar
         return buffer;
     }
 
@@ -577,9 +578,12 @@ class Gateway {
             const username = payload.slice(offset, offset + 32).toString('utf8').replace(/\0/g, '');
             offset += 32;
 
+            const avatar = payload.slice(offset, offset + 32).toString('utf8').replace(/\0/g, '') || 'avt1.jpg';
+            offset += 32;
+
             const is_owner = payload.readUInt8(offset++);
 
-            players.push({ user_id, username, is_owner });
+            players.push({ user_id, username, avatar, is_owner });
         }
 
         Logger.info('room infor and data players:', { room_id, room_name, max_players, state, owner_id, action, changed_user_id, changed_username, player_count, players });

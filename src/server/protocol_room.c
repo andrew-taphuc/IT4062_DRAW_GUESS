@@ -235,8 +235,11 @@ int protocol_broadcast_room_players_update(server_t *server, room_t *room,
         players[i].user_id = htonl((uint32_t)player_user_id);
         players[i].is_owner = (player_user_id == room->owner_id) ? 1 : 0;
 
-        // Tim username tu server->clients
+        // Tim username va avatar tu server->clients
         strncpy(players[i].username, "Unknown", MAX_USERNAME_LEN - 1);
+        strncpy(players[i].avatar, "avt1.jpg", 32 - 1);  // Default avatar
+        players[i].avatar[31] = '\0';
+        
         for (int j = 0; j < MAX_CLIENTS; j++)
         {
             if (server->clients[j].active &&
@@ -244,6 +247,8 @@ int protocol_broadcast_room_players_update(server_t *server, room_t *room,
             {
                 strncpy(players[i].username, server->clients[j].username, MAX_USERNAME_LEN - 1);
                 players[i].username[MAX_USERNAME_LEN - 1] = '\0';
+                strncpy(players[i].avatar, server->clients[j].avatar, 32 - 1);
+                players[i].avatar[31] = '\0';
                 break;
             }
         }

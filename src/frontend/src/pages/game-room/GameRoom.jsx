@@ -78,14 +78,22 @@ export default function GameRoom({
 
       const meId = myUserIdRef.current;
       const myAvatar = userAvatarRef.current;
-      const mapped = (data.players || []).map(p => ({
-        id: typeof p.user_id === 'number' ? p.user_id : parseInt(p.user_id, 10),
-        username: p.username,
-        avatar: (typeof p.user_id === 'number' ? p.user_id : parseInt(p.user_id, 10)) === meId ? myAvatar || '👤' : '👤',
-        score: 0,             // cập nhật từ game state khi có
-        isDrawing: currentDrawerId != null && (typeof p.user_id === 'number' ? p.user_id : parseInt(p.user_id, 10)) === currentDrawerId,
-        isOwner: p.is_owner === 1
-      }));
+      const mapped = (data.players || []).map(p => {
+        const playerId = typeof p.user_id === 'number' ? p.user_id : parseInt(p.user_id, 10);
+        // Sử dụng avatar từ server, nếu là current user thì ưu tiên myAvatar từ localStorage
+        let playerAvatar = p.avatar || 'avt1.jpg';
+        if (playerId === meId && myAvatar) {
+          playerAvatar = myAvatar;
+        }
+        return {
+          id: playerId,
+          username: p.username,
+          avatar: playerAvatar,
+          score: 0,             // cập nhật từ game state khi có
+          isDrawing: currentDrawerId != null && playerId === currentDrawerId,
+          isOwner: p.is_owner === 1
+        };
+      });
 
       console.log('Updated players:', mapped);
       setPlayers(mapped);

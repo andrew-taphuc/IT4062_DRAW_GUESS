@@ -81,6 +81,7 @@ typedef struct {
 typedef struct {
     char username[MAX_USERNAME_LEN];
     char password[MAX_PASSWORD_LEN];
+    char avatar[32];  // Avatar filename (e.g., "avt1.jpg")
 } login_request_t;
 
 // LOGIN_RESPONSE payload structure
@@ -183,6 +184,7 @@ typedef struct {
 typedef struct {
     int32_t user_id;
     char username[MAX_USERNAME_LEN];
+    char avatar[32];  // Avatar filename (e.g., "avt1.jpg")
     uint8_t is_owner;  // 1 nếu là owner, 0 nếu không
 } player_info_protocol_t;
 #pragma pack()

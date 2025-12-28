@@ -51,7 +51,7 @@ export default function LoginForm({
           <div 
             className="avatar-face"
             style={{
-              backgroundImage: `url(/src/assets/avt/${selectedAvatar})`
+              backgroundImage: `url(/assets/avt/${selectedAvatar})`
             }}
           ></div>
           <button 

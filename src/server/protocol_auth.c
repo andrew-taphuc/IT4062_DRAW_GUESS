@@ -103,12 +103,20 @@ int protocol_handle_login(server_t* server, int client_index, const message_t* m
     // Dam bao null-terminated
     char username[MAX_USERNAME_LEN];
     char password[MAX_PASSWORD_LEN];
+    char avatar[32];
     strncpy(username, req->username, MAX_USERNAME_LEN - 1);
     username[MAX_USERNAME_LEN - 1] = '\0';
     strncpy(password, req->password, MAX_PASSWORD_LEN - 1);
     password[MAX_PASSWORD_LEN - 1] = '\0';
+    strncpy(avatar, req->avatar, sizeof(avatar) - 1);
+    avatar[sizeof(avatar) - 1] = '\0';
+    // Default avatar nếu không có
+    if (avatar[0] == '\0') {
+        strncpy(avatar, "avt1.jpg", sizeof(avatar) - 1);
+        avatar[sizeof(avatar) - 1] = '\0';
+    }
 
-    printf("Nhan LOGIN_REQUEST tu client %d: username=%s\n", client_index, username);
+    printf("Nhan LOGIN_REQUEST tu client %d: username=%s, avatar=%s\n", client_index, username, avatar);
 
     // Kiem tra database connection
     if (!db) {
@@ -140,10 +148,12 @@ int protocol_handle_login(server_t* server, int client_index, const message_t* m
         client->user_id = user_id;
         strncpy(client->username, username, sizeof(client->username) - 1);
         client->username[sizeof(client->username) - 1] = '\0';
+        strncpy(client->avatar, avatar, sizeof(client->avatar) - 1);
+        client->avatar[sizeof(client->avatar) - 1] = '\0';
         client->state = CLIENT_STATE_LOGGED_IN;
         protocol_send_login_response(client->fd, STATUS_SUCCESS, user_id, username);
-        printf("Client %d dang nhap thanh cong: user_id=%d, username=%s\n", 
-               client_index, user_id, username);
+        printf("Client %d dang nhap thanh cong: user_id=%d, username=%s, avatar=%s\n", 
+               client_index, user_id, username, avatar);
         return 0;
     } else {
         // Dang nhap that bai

@@ -6,14 +6,16 @@ export default function PlayerList({ players, currentUserId }) {
   console.log('Rendering PlayerList with players:', players, 'and currentUserId:', currentUserId);
   // Chỉ hiển thị đúng danh sách players truyền vào, không tạo slot trống
   const displayPlayers = players.map(player => {
-    let playerAvatar = player.avatar;
+    // Sử dụng avatar từ server, nếu là current user thì ưu tiên localStorage (để hiển thị avatar mới nhất nếu vừa thay đổi)
+    let playerAvatar = player.avatar || 'avt1.jpg';
     if (player.id === currentUserId) {
       const currentUser = getCurrentUser();
-      playerAvatar = currentUser?.avatar || getAvatar();
+      playerAvatar = currentUser?.avatar || getAvatar() || playerAvatar;
     }
+    // Convert avatar filename thành path nếu là file ảnh
     let avatarDisplay = playerAvatar;
     if (playerAvatar && !playerAvatar.includes('👤') && !playerAvatar.includes('🎭') && playerAvatar.includes('.jpg')) {
-      avatarDisplay = `/src/assets/avt/${playerAvatar}`;
+      avatarDisplay = `/assets/avt/${playerAvatar}`;
     }
     return {
       ...player,
@@ -33,7 +35,7 @@ export default function PlayerList({ players, currentUserId }) {
             className={`player-item ${player.id === currentUserId ? 'current-player' : ''} ${player.isDrawing ? 'drawing' : ''}`}
           >
             <div className="player-avatar">
-              {player.avatar && player.avatar.startsWith('/src/assets/') ? (
+              {player.avatar && (player.avatar.startsWith('/assets/') || player.avatar.startsWith('/src/assets/')) ? (
                 <img src={player.avatar} alt="avatar" className="avatar-image" />
               ) : (
                 <span className="avatar-emoji">{player.avatar || '👤'}</span>

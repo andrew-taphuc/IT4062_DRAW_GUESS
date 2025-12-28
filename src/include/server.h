@@ -25,6 +25,7 @@ typedef struct {
     int active;
     int user_id;                    // -1 nếu chưa đăng nhập
     char username[32];              // Username (null-terminated)
+    char avatar[32];                 // Avatar filename (null-terminated)
     client_state_t state;           // Trạng thái hiện tại
 } client_t;
 

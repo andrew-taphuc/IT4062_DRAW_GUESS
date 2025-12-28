@@ -199,11 +199,11 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
           <div className="user-info">
             <div className="lobby-avatar">
               <img
-                src={`/src/assets/avt/${user?.avatar || 'avt1.jpg'}`}
+                src={`/assets/avt/${user?.avatar || 'avt1.jpg'}`}
                 alt="Avatar"
                 className="lobby-avatar-img"
                 onError={(e) => {
-                  e.target.src = '/src/assets/avt/avt1.jpg';
+                  e.target.src = '/assets/avt/avt1.jpg';
                 }}
               />
             </div>
