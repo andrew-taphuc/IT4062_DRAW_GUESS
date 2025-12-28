@@ -491,8 +491,12 @@ class Gateway {
             const owner_id_raw = payload.readUInt32BE(offset + 39);
             const owner_id = owner_id_raw > 0x7FFFFFFF ? owner_id_raw - 0x100000000 : owner_id_raw;
 
-            rooms.push({ room_id, room_name, player_count, max_players, state, owner_id });
-            offset += 43;
+            // Read owner_username (32 bytes)
+            const owner_username = payload.slice(offset + 43, offset + 75).toString('utf8').replace(/\0/g, '').trim();
+
+            Logger.info('Parsed room:', { room_id, room_name, owner_id, owner_username });
+            rooms.push({ room_id, room_name, player_count, max_players, state, owner_id, owner_username });
+            offset += 75; // 4 + 32 + 1 + 1 + 1 + 4 + 32 = 75 bytes
         }
         return { room_count: roomCount, rooms };
     }
@@ -535,7 +539,10 @@ class Gateway {
         const owner_id_raw = payload.readUInt32BE(39);
         const owner_id = owner_id_raw > 0x7FFFFFFF ? owner_id_raw - 0x100000000 : owner_id_raw;
 
-        return { room_id, room_name, player_count, max_players, state, owner_id };
+        // Read owner_username (32 bytes)
+        const owner_username = payload.slice(43, 75).toString('utf8').replace(/\0/g, '');
+
+        return { room_id, room_name, player_count, max_players, state, owner_id, owner_username };
     }
 
     parseRoomPlayersUpdate(payload) {

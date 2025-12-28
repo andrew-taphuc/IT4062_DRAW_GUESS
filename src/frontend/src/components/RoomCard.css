@@ -11,6 +11,11 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  /* Kích thước cố định cho mỗi card */
+  width: 100%;
+  min-width: 0; /* Cho phép shrink nếu cần */
+  height: 180px; /* Chiều cao cố định */
+  box-sizing: border-box;
 }
 
 .room-card:hover:not(.disabled) {
@@ -156,21 +161,22 @@
   .room-card {
     padding: 12px;
     gap: 8px;
+    height: 160px; /* Thu nhỏ chiều cao trên mobile */
   }
   
   .room-icon {
-    width: 45px;
-    height: 45px;
-    font-size: 1.4rem;
+    width: 40px;
+    height: 40px;
+    font-size: 1.3rem;
   }
   
   .room-name {
-    font-size: 0.95rem;
-    margin-bottom: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
   }
   
   .room-details {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     gap: 6px;
     flex-wrap: wrap;
     justify-content: center;
@@ -181,13 +187,13 @@
   }
   
   .detail-item .icon {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
   
   .official-badge {
-    width: 20px;
-    height: 20px;
-    font-size: 0.8rem;
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
     top: 6px;
     right: 6px;
   }
@@ -197,20 +203,21 @@
 @media (max-width: 400px) {
   .room-card {
     padding: 10px;
+    height: 150px; /* Thu nhỏ hơn nữa trên mobile rất nhỏ */
   }
   
   .room-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
+    width: 35px;
+    height: 35px;
+    font-size: 1.1rem;
   }
   
   .room-name {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
   
   .room-details {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
   }
 }
 

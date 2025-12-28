@@ -43,7 +43,7 @@ export default function RoomCard({ room, onJoin }) {
           </span>
           <span className="detail-item">
             <span className="icon">👑</span>
-            {room.isOfficial ? 'Hệ thống' : `User ${room.ownerId}`}
+            {room.isOfficial ? 'Hệ thống' : (room.ownerUsername || `User ${room.ownerId}`)}
           </span>
         </div>
       </div>

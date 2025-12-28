@@ -108,6 +108,19 @@ int protocol_send_room_list(int client_fd, server_t *server)
         room_info_proto[i].max_players = room_list[i].max_players;
         room_info_proto[i].state = (uint8_t)room_list[i].state;
         room_info_proto[i].owner_id = htonl((uint32_t)room_list[i].owner_id);
+        
+        // Tim username cua chu phong tu server->clients
+        strncpy(room_info_proto[i].owner_username, "Unknown", MAX_USERNAME_LEN - 1);
+        for (int j = 0; j < MAX_CLIENTS; j++)
+        {
+            if (server->clients[j].active &&
+                server->clients[j].user_id == room_list[i].owner_id)
+            {
+                strncpy(room_info_proto[i].owner_username, server->clients[j].username, MAX_USERNAME_LEN - 1);
+                room_info_proto[i].owner_username[MAX_USERNAME_LEN - 1] = '\0';
+                break;
+            }
+        }
     }
 
     return protocol_send_message(client_fd, MSG_ROOM_LIST_RESPONSE,
@@ -155,7 +168,19 @@ int protocol_broadcast_room_list(server_t *server)
         room_info_proto[i].max_players = room_list[i].max_players;
         room_info_proto[i].state = (uint8_t)room_list[i].state;
         room_info_proto[i].owner_id = htonl((uint32_t)room_list[i].owner_id);
-        unsigned char *bytes = (unsigned char *)&room_info_proto[i].owner_id;
+        
+        // Tim username cua chu phong tu server->clients
+        strncpy(room_info_proto[i].owner_username, "Unknown", MAX_USERNAME_LEN - 1);
+        for (int j = 0; j < MAX_CLIENTS; j++)
+        {
+            if (server->clients[j].active &&
+                server->clients[j].user_id == room_list[i].owner_id)
+            {
+                strncpy(room_info_proto[i].owner_username, server->clients[j].username, MAX_USERNAME_LEN - 1);
+                room_info_proto[i].owner_username[MAX_USERNAME_LEN - 1] = '\0';
+                break;
+            }
+        }
     }
 
     // Gui den tat ca clients da dang nhap (LOGGED_IN tro len)

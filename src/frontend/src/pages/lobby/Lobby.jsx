@@ -14,6 +14,9 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
   const [error, setError] = useState(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const userInfoRef = useRef(null);
   const timeoutRef = useRef(null); 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -25,6 +28,20 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
 
   // Hiển thị rooms từ server hoặc từ props
   const displayRooms = rooms.length > 0 ? rooms : filteredRooms;
+
+  // Đóng dropdown khi click bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showUserMenu && !event.target.closest('.user-info') && !event.target.closest('.user-menu-dropdown')) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   // Kết nối và lắng nghe events từ server
   useEffect(() => {
@@ -70,6 +87,23 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
               default: return 'Không xác định';
             }
           };
+          // Xử lý owner_username: nếu rỗng, null, undefined, hoặc "Unknown" thì fallback
+          const ownerUsername = room.owner_username && 
+                                room.owner_username.trim() !== '' && 
+                                room.owner_username !== 'Unknown' 
+                                ? room.owner_username 
+                                : `User ${room.owner_id}`;
+          
+          // Debug log
+          if (room.owner_username) {
+            console.log('Room owner info:', { 
+              room_id: room.room_id, 
+              owner_id: room.owner_id, 
+              owner_username: room.owner_username,
+              final_ownerUsername: ownerUsername 
+            });
+          }
+          
           return {
             id: room.room_id.toString(),
             name: room.room_name,
@@ -78,6 +112,7 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
             state: room.state,
             stateText: getStateText(room.state),
             ownerId: room.owner_id,
+            ownerUsername: ownerUsername, // Username của chủ phòng
             canJoin: room.state === 0 && room.player_count < room.max_players
           };
         });
@@ -196,7 +231,21 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
       {/* Header */}
       <header className="lobby-header">
         <div className="header-left">
-          <div className="user-info">
+          <div 
+            ref={userInfoRef}
+            className={`user-info ${showUserMenu ? 'active' : ''}`}
+            onClick={() => {
+              if (userInfoRef.current) {
+                const rect = userInfoRef.current.getBoundingClientRect();
+                setDropdownPosition({
+                  top: rect.bottom + 15,
+                  left: rect.left
+                });
+              }
+              setShowUserMenu(!showUserMenu);
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="lobby-avatar">
               <img
                 src={`/assets/avt/${user?.avatar || 'avt1.jpg'}`}
@@ -210,7 +259,29 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
             <span className="username">
               {(user?.username ? user.username.replace(/[\x00-\x1F]/g, '') : 'Guest')}
             </span>
+            {/* Dropdown arrow for mobile */}
+            <span className="user-menu-arrow">▼</span>
           </div>
+          {/* Dropdown menu for mobile */}
+          {showUserMenu && (
+            <div 
+              className="user-menu-dropdown"
+              style={{
+                top: `${dropdownPosition.top}px`,
+                left: `${dropdownPosition.left}px`
+              }}
+            >
+              <button 
+                className="user-menu-item"
+                onClick={() => {
+                  handleLogout();
+                  setShowUserMenu(false);
+                }}
+              >
+                Đăng xuất
+              </button>
+            </div>
+          )}
         </div>
         <div className="header-center">
           <h1 className="lobby-logo">Draw & Guess</h1>
@@ -245,31 +316,37 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
         </div>
 
         {/* Room List */}
-        <div className="rooms-grid">
-          {error ? (
-            <div className="error-message">
-              <p>{error}</p>
-              <button onClick={loadRoomList} className="retry-btn">
-                Thử lại
-              </button>
-            </div>
-          ) : isLoadingRooms ? (
-            <div className="loading-message">
-              <p>Đang tải danh sách phòng...</p>
-            </div>
-          ) : displayRooms.length > 0 ? (
-            displayRooms.map((room) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                onJoin={handleJoinRoom}
-              />
-            ))
-          ) : (
-            <div className="no-rooms-message">
-              <p>Chưa có phòng nào. Hãy tạo phòng mới!</p>
-            </div>
-          )}
+        <div className="rooms-grid-container">
+          <div className="rooms-grid">
+            {error ? (
+              <div className="error-message">
+                <p>{error}</p>
+                <button onClick={loadRoomList} className="retry-btn">
+                  Thử lại
+                </button>
+              </div>
+            ) : isLoadingRooms ? (
+              <div className="loading-message">
+                <p>Đang tải danh sách phòng...</p>
+              </div>
+            ) : displayRooms.length > 0 ? (
+              displayRooms.map((room) => (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  onJoin={handleJoinRoom}
+                />
+              ))
+            ) : (
+              <div className="no-rooms-message">
+                <p>Chưa có phòng nào. Hãy tạo phòng mới!</p>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Animated duck */}
+        <div className="duck-animation">
+          <img src="/assets/duck.gif" alt="Duck" className="duck-image" />
         </div>
       </main>
       {/* Action Buttons */}

@@ -4,11 +4,30 @@
   box-sizing: border-box;
 }
 
+/* Cố định body và html để tránh scroll */
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  overflow-x: hidden; /* Ẩn thanh scroll ngang */
+}
+
 .lobby-page {
   background: url('/src/assets/background.jpeg');
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  overflow-x: hidden; /* Ẩn thanh scroll ngang */
+  display: flex;
+  flex-direction: column;
+  padding: 40px 0; /* Thêm padding cạnh trên và cạnh dưới màn hình */
+  box-sizing: border-box;
 }
 
 .lobby-page::before {
@@ -49,6 +68,8 @@
   position: relative;
   z-index: 1;
   padding: 20px 40px;
+  flex-shrink: 0;
+  height: 100px; /* Chiều cao cố định cho header */
 }
 
 
@@ -59,6 +80,8 @@
   transform: translateY(-50%);
   display: flex;
   align-items: center;
+  z-index: 10000; /* Đảm bảo header-left ở trên để dropdown có thể hiển thị */
+  padding-top: 10px; /* Thêm padding phía trên */
 }
 
 .header-center {
@@ -106,18 +129,85 @@
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   color: white;
   font-weight: 500;
   justify-content: flex-start;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 16px;
+  border-radius: 25px;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1001; /* Đảm bảo user-info ở trên để dropdown có thể hiển thị */
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.user-menu-arrow {
+  display: none;
+  font-size: 0.7rem;
+  transition: transform 0.3s ease;
+}
+
+.user-info.active .user-menu-arrow {
+  transform: rotate(180deg);
+}
+
+/* Dropdown menu for mobile */
+.user-menu-dropdown {
+  display: none; /* Ẩn trên desktop */
+  position: fixed; /* Fixed để luôn hiển thị trên cùng */
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  min-width: 150px;
+  z-index: 10000; /* Tăng z-index cao để luôn hiển thị trên cùng */
+  overflow: hidden;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-menu-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.user-menu-item:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #e53935 100%);
 }
 
 .username {
-  font-size: 1rem;
-  color: #000000;
-  background-color: #ffffff;
-  padding: 6px 6px; 
-  border-radius: 8px;
+  font-size: 1.1rem;
+  color: #ffffff;
+  font-weight: 600;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .lobby-avatar {
@@ -141,7 +231,34 @@
 }
 
 .btn-logout {
-  padding: auto;
+  padding: 0;
+}
+
+.btn-logout button {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 24px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(238, 90, 111, 0.3);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.btn-logout button:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #e53935 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(238, 90, 111, 0.4);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-logout button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(238, 90, 111, 0.3);
 }
 
 /* Main Content */
@@ -149,35 +266,26 @@
   position: relative;
   z-index: 1;
   padding: 15px 30px;
-  max-width: 1400px;
+  width: 1400px;
+  max-width: 95vw;
   margin: 5px auto;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
   border: 3px solid rgba(102, 126, 234, 0.4);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  max-height: 70vh;
+  height: calc(100vh - 100px - 100px - 80px); /* 100vh - header - actions - padding (40px top + 40px bottom) */
   overflow-y: auto;
+  overflow-x: hidden; /* Ẩn thanh scroll ngang */
+  flex: 1;
+  min-height: 0; /* Cho phép flex shrink */
+  /* Ẩn scrollbar */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-/* Custom scrollbar for main content */
+/* Ẩn scrollbar cho Chrome, Safari và Opera */
 .lobby-main::-webkit-scrollbar {
-  width: 8px;
-}
-
-.lobby-main::-webkit-scrollbar-track {
-  background: rgba(102, 126, 234, 0.1);
-  border-radius: 4px;
-  margin: 12px 0;
-}
-
-.lobby-main::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.5);
-  border-radius: 4px;
-  margin: 12px 0;
-}
-
-.lobby-main::-webkit-scrollbar-thumb:hover {
-  background: rgba(102, 126, 234, 0.7);
+  display: none;
 }
 
 
@@ -287,12 +395,203 @@
   margin: 0;
 }
 
+/* Mobile: Thu nhỏ rooms-title */
+@media (max-width: 768px) {
+  .rooms-title {
+    padding: 12px 20px;
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .rooms-title h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* Rooms Grid Container */
+.rooms-grid-container {
+  position: relative;
+  margin-bottom: 30px;
+}
+
 /* Rooms Grid */
 .rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 20px;
-  margin-bottom: 30px;
+  /* Đủ cho 2 dòng đầy đủ: 2 * 180px + 1 * 20px = 360px + 20px = 380px */
+  height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden; /* Ẩn thanh scroll ngang */
+  padding-right: 8px;
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar cho rooms grid */
+.rooms-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rooms-grid::-webkit-scrollbar-track {
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 4px;
+}
+
+.rooms-grid::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.5);
+  border-radius: 4px;
+}
+
+.rooms-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.7);
+}
+
+/* Duck Animation */
+.duck-animation {
+  position: absolute;
+  bottom: -10px; /* Bỏ qua padding bottom của lobby-main */
+  left: 0;
+  width: 100%;
+  height: 80px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.duck-image {
+  position: absolute;
+  bottom: 0;
+  width: 115px; /* Tăng 15% từ 100px */
+  height: auto;
+  animation: duckWalk 25s ease-in-out infinite;
+}
+
+@keyframes duckWalk {
+  /* Đi chậm từ trái sang */
+  0% {
+    left: -100px;
+    transform: scaleX(1);
+  }
+  15% {
+    left: 10%;
+    transform: scaleX(1);
+  }
+  /* Chạy nhanh một đoạn */
+  16% {
+    left: 10%;
+    transform: scaleX(1);
+  }
+  18% {
+    left: 25%;
+    transform: scaleX(1);
+  }
+  /* Đi chậm tiếp */
+  19% {
+    left: 25%;
+    transform: scaleX(1);
+  }
+  30% {
+    left: 40%;
+    transform: scaleX(1);
+  }
+  /* Chạy nhanh một đoạn */
+  31% {
+    left: 40%;
+    transform: scaleX(1);
+  }
+  33% {
+    left: 55%;
+    transform: scaleX(1);
+  }
+  /* Đi chậm tiếp */
+  34% {
+    left: 55%;
+    transform: scaleX(1);
+  }
+  45% {
+    left: 70%;
+    transform: scaleX(1);
+  }
+  /* Chạy nhanh một đoạn */
+  46% {
+    left: 70%;
+    transform: scaleX(1);
+  }
+  48% {
+    left: 85%;
+    transform: scaleX(1);
+  }
+  /* Đi chậm đến cuối */
+  49% {
+    left: 85%;
+    transform: scaleX(1);
+  }
+  50% {
+    left: calc(100% + 0px);
+    transform: scaleX(-1);
+  }
+  /* Quay lại - đi chậm từ phải sang */
+  51% {
+    left: calc(100% + 0px);
+    transform: scaleX(-1);
+  }
+  65% {
+    left: 90%;
+    transform: scaleX(-1);
+  }
+  /* Chạy nhanh một đoạn */
+  66% {
+    left: 90%;
+    transform: scaleX(-1);
+  }
+  68% {
+    left: 75%;
+    transform: scaleX(-1);
+  }
+  /* Đi chậm tiếp */
+  69% {
+    left: 75%;
+    transform: scaleX(-1);
+  }
+  80% {
+    left: 60%;
+    transform: scaleX(-1);
+  }
+  /* Chạy nhanh một đoạn */
+  81% {
+    left: 60%;
+    transform: scaleX(-1);
+  }
+  83% {
+    left: 45%;
+    transform: scaleX(-1);
+  }
+  /* Đi chậm tiếp */
+  84% {
+    left: 45%;
+    transform: scaleX(-1);
+  }
+  95% {
+    left: 30%;
+    transform: scaleX(-1);
+  }
+  /* Chạy nhanh một đoạn */
+  96% {
+    left: 30%;
+    transform: scaleX(-1);
+  }
+  98% {
+    left: 15%;
+    transform: scaleX(-1);
+  }
+  /* Đi chậm về đầu */
+  99% {
+    left: 15%;
+    transform: scaleX(-1);
+  }
+  100% {
+    left: -100px;
+    transform: scaleX(1);
+  }
 }
 
 /* Action Buttons */
@@ -300,7 +599,10 @@
   display: flex;
   gap: 20px;
   justify-content: center;
-  padding: 20px 0;
+  padding: 20px 0 30px 0; /* Thêm padding phía dưới */
+  flex-shrink: 0;
+  height: 100px; /* Chiều cao cố định cho actions */
+  align-items: center;
 }
 
 .btn-new-room,
@@ -313,19 +615,40 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center; /* Căn giữa text */
   gap: 12px;
   transition: all 0.3s;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  text-align: center; /* Căn giữa text */
 }
 
 .btn-new-room {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #00d4ff 0%, #00a8ff 50%, #0099ff 100%);
   color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-new-room::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.btn-new-room:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .btn-new-room:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 20px rgba(0, 212, 255, 0.4);
+  background: linear-gradient(135deg, #00e5ff 0%, #00b8ff 50%, #00aaff 100%);
 }
 
 .btn-new-room:disabled {
@@ -353,7 +676,7 @@
 /* Tablet Landscape (968px - 1200px) */
 @media (max-width: 1200px) {
   .lobby-main {
-    max-width: 1200px;
+    width: 95vw;
     padding: 15px 25px;
   }
   
@@ -362,8 +685,19 @@
   }
   
   .rooms-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 18px;
+    height: 365px; /* Đủ cho 2 dòng: 2 * 180px + 1 * 18px = 378px, làm tròn 365px */
+  }
+  
+  .duck-image {
+    width: 104px; /* Tăng 15% từ 90px */
+    bottom: 0;
+  }
+  
+  .duck-animation {
+    bottom: -15px; /* Bỏ qua padding bottom */
+    height: 70px;
   }
 }
 
@@ -381,6 +715,21 @@
     align-self: center;
     transform: none;
   }
+  
+  /* Ẩn nút đăng xuất trên tablet */
+  .header-right {
+    display: none;
+  }
+  
+  /* Hiện dropdown arrow trên tablet */
+  .user-menu-arrow {
+    display: block;
+  }
+  
+  /* Hiện dropdown menu trên tablet */
+  .user-menu-dropdown {
+    display: block;
+  }
 
   .header-center {
     order: -1;
@@ -397,19 +746,41 @@
     font-size: 2.5rem;
   }
   
+  .user-info {
+    gap: 10px;
+    padding: 6px 12px;
+  }
+  
   .username {
+    font-size: 0.95rem;
+    max-width: 150px;
+  }
+  
+  .btn-logout button {
+    padding: 8px 18px;
     font-size: 0.9rem;
-    padding: 5px 8px;
   }
 
   .lobby-main {
+    width: 95vw;
     padding: 15px 20px;
-    max-height: 75vh;
+    height: calc(100vh - 100px - 100px - 80px); /* Trừ thêm padding (40px top + 40px bottom) */
   }
 
   .rooms-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, 1fr); /* 4 phòng mỗi dòng trên tablet */
     gap: 15px;
+    height: 375px; /* Đủ cho 2 dòng: 2 * 180px + 1 * 15px = 375px */
+  }
+  
+  .duck-image {
+    width: 92px; /* Tăng 15% từ 80px */
+    bottom: 0;
+  }
+  
+  .duck-animation {
+    bottom: -15px; /* Bỏ qua padding bottom */
+    height: 65px;
   }
 
   .lobby-actions {
@@ -420,8 +791,9 @@
   .btn-new-room,
   .btn-play {
     flex: 1;
-    padding: 14px 30px;
-    font-size: 1.1rem;
+    padding: 14px 24px;
+    font-size: 1rem;
+    max-width: 300px;
   }
 }
 
@@ -435,9 +807,20 @@
     font-size: 2rem;
   }
   
+  /* Ẩn nút đăng xuất trên mobile */
+  .header-right {
+    display: none;
+  }
+  
+  /* Hiện dropdown arrow trên mobile */
+  .user-menu-arrow {
+    display: block;
+  }
+  
   .lobby-main {
+    width: 95vw;
     padding: 12px 15px;
-    max-height: 80vh;
+    height: calc(100vh - 100px - 100px - 80px); /* Trừ thêm padding (40px top + 40px bottom) */
   }
   
   .rooms-header {
@@ -452,11 +835,11 @@
   .rooms-title {
     width: 100%;
     min-width: auto;
-    padding: 15px;
+    padding: 12px 16px;
   }
   
   .rooms-title h2 {
-    font-size: 1.6rem;
+    font-size: 1.3rem;
   }
 
   .rooms-header .search-container {
@@ -487,21 +870,33 @@
   }
   
   .rooms-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(3, 1fr); /* 3 phòng mỗi dòng trên tablet nhỏ */
     gap: 12px;
+    height: 372px; /* Đủ cho 2 dòng: 2 * 180px + 1 * 12px = 372px */
   }
   
+  .duck-image {
+    width: 81px; /* Tăng 15% từ 70px */
+    bottom: 0;
+  }
+  
+  .duck-animation {
+    bottom: -12px; /* Bỏ qua padding bottom */
+    height: 60px;
+  }
+  
+  /* Thu nhỏ buttons */
   .lobby-actions {
     flex-direction: column;
     gap: 12px;
   }
-
+  
   .btn-new-room,
   .btn-play {
-    width: 100%;
-    justify-content: center;
-    padding: 12px 24px;
+    padding: 12px 20px;
     font-size: 1rem;
+    width: 100%;
+    max-width: 300px;
   }
 }
 
@@ -516,15 +911,44 @@
     font-size: 1.8rem;
   }
   
+  /* Ẩn nút đăng xuất trên mobile */
+  .header-right {
+    display: none;
+  }
+  
+  /* Hiện dropdown arrow trên mobile */
+  .user-menu-arrow {
+    display: block;
+  }
+  
+  /* Hiện dropdown menu trên mobile */
+  .user-menu-dropdown {
+    display: block;
+  }
+  
   .lobby-avatar {
     width: 45px;
     height: 45px;
     font-size: 2.2rem;
   }
   
+  .user-info {
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  
   .username {
     font-size: 0.85rem;
-    padding: 4px 6px;
+    max-width: 100px;
+  }
+  
+  .user-menu-dropdown {
+    min-width: 140px;
+  }
+  
+  .user-menu-item {
+    padding: 10px 14px;
+    font-size: 0.9rem;
   }
   
   .back-btn {
@@ -533,8 +957,9 @@
   }
 
   .lobby-main {
+    width: 95vw;
     padding: 10px 12px;
-    max-height: 85vh;
+    height: calc(100vh - 100px - 100px - 80px); /* Trừ thêm padding (40px top + 40px bottom) */
     margin: 3px auto;
   }
   
@@ -544,11 +969,11 @@
   }
 
   .rooms-title {
-    padding: 12px;
+    padding: 10px 14px;
   }
   
   .rooms-title h2 {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
   }
 
   .lobby-controls {
@@ -573,8 +998,19 @@
   }
 
   .rooms-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr); /* 2 phòng mỗi dòng trên mobile landscape */
     gap: 10px;
+    height: 370px; /* Đủ cho 2 dòng: 2 * 180px + 1 * 10px = 370px */
+  }
+  
+  .duck-image {
+    width: 69px; /* Tăng 15% từ 60px */
+    bottom: 0;
+  }
+  
+  .duck-animation {
+    bottom: -10px; /* Bỏ qua padding bottom */
+    height: 55px;
   }
   
   .lobby-actions {
@@ -583,8 +1019,10 @@
   
   .btn-new-room,
   .btn-play {
-    padding: 12px 20px;
+    padding: 12px 18px;
     font-size: 0.95rem;
+    width: 100%;
+    max-width: 280px;
   }
   
   .btn-icon {
@@ -603,15 +1041,44 @@
     letter-spacing: 1px;
   }
   
+  /* Ẩn nút đăng xuất trên mobile */
+  .header-right {
+    display: none;
+  }
+  
+  /* Hiện dropdown arrow trên mobile */
+  .user-menu-arrow {
+    display: block;
+  }
+  
+  /* Hiện dropdown menu trên mobile */
+  .user-menu-dropdown {
+    display: block;
+  }
+  
   .lobby-avatar {
     width: 40px;
     height: 40px;
     font-size: 2rem;
   }
   
+  .user-info {
+    gap: 6px;
+    padding: 5px 8px;
+  }
+  
   .username {
     font-size: 0.8rem;
-    padding: 3px 5px;
+    max-width: 80px;
+  }
+  
+  .user-menu-dropdown {
+    min-width: 130px;
+  }
+  
+  .user-menu-item {
+    padding: 10px 12px;
+    font-size: 0.85rem;
   }
   
   .back-btn {
@@ -620,8 +1087,9 @@
   }
 
   .lobby-main {
+    width: 95vw;
     padding: 8px 10px;
-    max-height: 90vh;
+    height: calc(100vh - 100px - 100px - 80px); /* Trừ thêm padding (40px top + 40px bottom) */
     border-radius: 15px;
   }
   
@@ -631,11 +1099,11 @@
   }
 
   .rooms-title {
-    padding: 10px;
+    padding: 8px 12px;
   }
   
   .rooms-title h2 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 
   .search-input {
@@ -654,13 +1122,27 @@
   }
   
   .rooms-grid {
+    grid-template-columns: 1fr; /* 1 phòng mỗi dòng trên mobile nhỏ */
     gap: 8px;
+    height: 368px; /* Đủ cho 2 dòng: 2 * 180px + 1 * 8px = 368px */
+  }
+  
+  .duck-image {
+    width: 58px; /* Tăng 15% từ 50px */
+    bottom: 0;
+  }
+  
+  .duck-animation {
+    bottom: -8px; /* Bỏ qua padding bottom */
+    height: 50px;
   }
   
   .btn-new-room,
   .btn-play {
     padding: 10px 16px;
     font-size: 0.9rem;
+    width: 100%;
+    max-width: 250px;
   }
   
   .btn-icon {
@@ -688,6 +1170,10 @@
   
   .filter-dropdown {
     font-size: 0.85rem;
+  }
+  
+  .duck-animation {
+    bottom: -6px; /* Bỏ qua padding bottom */
   }
 }
 

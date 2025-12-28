@@ -167,6 +167,7 @@ typedef struct {
     uint8_t max_players;
     uint8_t state;                // room_state_protocol_t
     int32_t owner_id;
+    char owner_username[MAX_USERNAME_LEN];  // Username của chủ phòng
 } room_info_protocol_t;
 #pragma pack(pop)
 
