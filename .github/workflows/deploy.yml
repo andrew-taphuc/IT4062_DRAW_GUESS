@@ -21,37 +21,14 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           set -e
 
-          echo "===> Đi tới project"
-          cd /opt/IT4062_DRAW_GUESS/src
-
-          echo "===> make clean"
-          make clean || true
-
-          echo "===> git pull main"
+          echo "===> Git pull main"
           cd /opt/IT4062_DRAW_GUESS
           git pull origin main
 
-          echo "===> Đảm bảo database Docker đang chạy"
-          cd /opt/IT4062_DRAW_GUESS/src
-          docker compose up -d
-
-          echo "===> Build C server"
-          make
-          systemctl restart drawguess
-
-          echo "===> Build gateway + restart PM2"
-          cd /opt/IT4062_DRAW_GUESS/src/gateway
-          npm ci || npm install
-          pm2 restart drawguess-gateway || pm2 start index.js --name drawguess-gateway
-          pm2 save
-
-          echo "===> Build frontend"
-          cd /opt/IT4062_DRAW_GUESS/src/frontend
-          npm ci || npm install
-          npm run build
-
-          echo "===> Reload nginx"
-          systemctl reload nginx
+          echo "===> Cấp quyền và chạy deploy script"
+          cd /opt/IT4062_DRAW_GUESS/src/server
+          chmod +x deploy.sh
+          ./deploy.sh
 
           echo "===> DONE"
           EOF
