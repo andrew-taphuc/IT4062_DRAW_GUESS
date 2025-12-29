@@ -144,6 +144,7 @@ int protocol_handle_round_timeout(server_t* server, room_t* room, const char* wo
 int protocol_handle_logout(server_t* server, int client_index, const message_t* msg);
 int protocol_handle_chat_message(server_t* server, int client_index, const message_t* msg);
 int protocol_process_guess(server_t* server, int client_index, room_t* room, const char* guess);
+int protocol_handle_get_game_history(server_t* server, int client_index, const message_t* msg);
 
 #endif // PROTOCOL_HANDLER_H
 

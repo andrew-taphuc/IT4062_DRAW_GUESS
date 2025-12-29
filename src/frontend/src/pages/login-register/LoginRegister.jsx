@@ -51,7 +51,7 @@ export default function LoginRegister({ onLoginSuccess }) {
     if (user && !isLoading) {
       setMessage({ text: 'Đăng nhập thành công!', type: 'success' });
       setTimeout(() => {
-        navigate('/lobby');
+        navigate('/menu');
         if (onLoginSuccess) {
           onLoginSuccess();
         }

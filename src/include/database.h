@@ -131,4 +131,25 @@ int db_update_room_player_score(db_connection_t* db, int player_db_id, int score
 // Update users aggregate stats (total_games/total_wins/total_score).
 int db_update_user_stats(db_connection_t* db, int user_id, int score, int is_win);
 
+// Lưu lịch sử chơi của người dùng
+// @param user_id ID của người dùng
+// @param score Điểm số đạt được
+// @param rank Thứ hạng (1 = thắng, 2 = hạng 2, ...)
+// @return 1 nếu thành công, 0 nếu thất bại
+int db_save_game_history(db_connection_t* db, int user_id, int score, int rank);
+
+// Cấu trúc để lưu 1 entry lịch sử
+typedef struct {
+    int score;
+    int rank;
+    char finished_at[32]; // YYYY-MM-DD HH:MM:SS format
+} game_history_entry_t;
+
+// Lấy lịch sử chơi của người dùng (sắp xếp theo thời gian mới nhất)
+// @param user_id ID của người dùng
+// @param entries Mảng để lưu lịch sử (phải được cấp phát trước)
+// @param max_entries Số lượng entry tối đa
+// @return Số lượng entry thực tế lấy được, -1 nếu lỗi
+int db_get_game_history(db_connection_t* db, int user_id, game_history_entry_t* entries, int max_entries);
+
 #endif // DATABASE_H

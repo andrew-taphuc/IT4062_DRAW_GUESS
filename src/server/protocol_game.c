@@ -160,6 +160,40 @@ static int broadcast_game_end(server_t* server, room_t* room) {
         }
     }
 
+    // Lưu lịch sử chơi cho tất cả người chơi
+    if (db && game->score_count > 0) {
+        // Tạo mảng tạm để sắp xếp theo điểm giảm dần (để tính rank)
+        typedef struct {
+            int user_id;
+            int score;
+        } player_score_t;
+        
+        player_score_t sorted_scores[MAX_PLAYERS_PER_ROOM];
+        for (int i = 0; i < game->score_count; i++) {
+            sorted_scores[i].user_id = game->scores[i].user_id;
+            sorted_scores[i].score = game->scores[i].score;
+        }
+        
+        // Bubble sort giảm dần theo score
+        for (int i = 0; i < game->score_count - 1; i++) {
+            for (int j = 0; j < game->score_count - i - 1; j++) {
+                if (sorted_scores[j].score < sorted_scores[j + 1].score) {
+                    player_score_t temp = sorted_scores[j];
+                    sorted_scores[j] = sorted_scores[j + 1];
+                    sorted_scores[j + 1] = temp;
+                }
+            }
+        }
+        
+        // Lưu lịch sử với rank
+        for (int i = 0; i < game->score_count; i++) {
+            int rank = i + 1; // rank từ 1, 2, 3, ...
+            db_save_game_history(db, sorted_scores[i].user_id, sorted_scores[i].score, rank);
+        }
+        
+        printf("[GAME_END] Saved game history for %d players\n", game->score_count);
+    }
+
     const uint16_t score_count = (uint16_t)game->score_count;
     const size_t payload_size = 4 + 2 + (size_t)score_count * (sizeof(int32_t) + sizeof(int32_t));
     if (payload_size > BUFFER_SIZE - 3) return -1;

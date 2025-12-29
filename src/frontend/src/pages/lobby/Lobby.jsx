@@ -226,6 +226,10 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
     navigate('/');
   }
 
+  const handleBackToMenu = () => {
+    navigate('/menu');
+  }
+
   return (
     <div className="lobby-page">
       {/* Header */}
@@ -272,6 +276,15 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
               }}
             >
               <button 
+                className="user-menu-item user-menu-item-back"
+                onClick={() => {
+                  handleBackToMenu();
+                  setShowUserMenu(false);
+                }}
+              >
+                ← Quay lại Menu
+              </button>
+              <button 
                 className="user-menu-item"
                 onClick={() => {
                   handleLogout();
@@ -287,6 +300,11 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
           <h1 className="lobby-logo">Draw & Guess</h1>
         </div>
         <div className="header-right">
+          <div className="btn-back-menu">
+            <button onClick={handleBackToMenu}>
+              ← Menu
+            </button>
+          </div>
           <div className="btn-logout">
             <button onClick={() => { handleLogout(); }}>
               Đăng xuất

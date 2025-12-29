@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Canvas from '../../components/Canvas';
 import ChatPanel from '../../components/ChatPanel';
 import PlayerList from '../../components/PlayerList';
+import LeaderboardModal from '../../components/LeaderboardModal';
 import { useAuth } from '../../hooks/useAuth';
 import { getServices } from '../../services/Services';
 import './GameRoom.css';
@@ -49,6 +50,7 @@ export default function GameRoom({
   const [currentRound, setCurrentRound] = useState(0);
   const [playerCount, setPlayerCount] = useState(0);
   const [totalRounds, setTotalRounds] = useState(0);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const timerRef = useRef(null);
 
   const isOwner = useMemo(() => {
@@ -287,6 +289,8 @@ export default function GameRoom({
       setWord('');
       setWordLength(0);
       setCategory('');
+      // Hiển thị modal bảng xếp hạng
+      setShowLeaderboard(true);
     };
 
     const subscribe = () => {
@@ -436,8 +440,21 @@ export default function GameRoom({
     services.startGame();
   };
 
+  const handleCloseLeaderboard = () => {
+    setShowLeaderboard(false);
+    // Rời phòng và về lobby
+    handleLeaveRoom();
+  };
+
   return (
     <div className="game-room-page">
+      {/* Leaderboard Modal */}
+      <LeaderboardModal 
+        players={players} 
+        onClose={handleCloseLeaderboard} 
+        show={showLeaderboard}
+      />
+      
       {/* Main Game Area */}
       <main className="game-main">
         {/* Header thông tin chung */}

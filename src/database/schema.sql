@@ -88,3 +88,15 @@ CREATE TABLE words (
     times_used INT NOT NULL DEFAULT 0,
     INDEX idx_words_difficulty (difficulty)
 );
+
+-- Bảng lịch sử chơi của người dùng
+CREATE TABLE game_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    score INT NOT NULL,
+    player_rank INT NOT NULL,
+    finished_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_finished_at (finished_at)
+);

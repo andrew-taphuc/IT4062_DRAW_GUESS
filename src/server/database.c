@@ -717,3 +717,50 @@ int db_update_user_stats(db_connection_t* db, int user_id, int score, int is_win
     if (r) mysql_free_result(r);
     return mysql_errno(db->conn) ? -1 : 0;
 }
+
+int db_save_game_history(db_connection_t* db, int user_id, int score, int rank) {
+    if (!db || !db->conn || user_id <= 0) return 0;
+    char uid_buf[32], score_buf[32], rank_buf[32];
+    snprintf(uid_buf, sizeof(uid_buf), "%d", user_id);
+    snprintf(score_buf, sizeof(score_buf), "%d", score);
+    snprintf(rank_buf, sizeof(rank_buf), "%d", rank);
+
+    MYSQL_RES* r = db_execute_query(db,
+        "INSERT INTO game_history (user_id, score, player_rank) VALUES (?, ?, ?)",
+        uid_buf, score_buf, rank_buf
+    );
+    if (r) mysql_free_result(r);
+    return mysql_errno(db->conn) ? 0 : 1;
+}
+
+int db_get_game_history(db_connection_t* db, int user_id, game_history_entry_t* entries, int max_entries) {
+    if (!db || !db->conn || user_id <= 0 || !entries || max_entries <= 0) return -1;
+    
+    char uid_buf[32];
+    snprintf(uid_buf, sizeof(uid_buf), "%d", user_id);
+    
+    MYSQL_RES* result = db_execute_query(db,
+        "SELECT score, player_rank, DATE_FORMAT(finished_at, '%Y-%m-%d %H:%i:%s') as finished_at "
+        "FROM game_history WHERE user_id = ? ORDER BY finished_at DESC LIMIT 100",
+        uid_buf
+    );
+    
+    if (!result) return -1;
+    
+    int count = 0;
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(result)) && count < max_entries) {
+        entries[count].score = row[0] ? atoi(row[0]) : 0;
+        entries[count].rank = row[1] ? atoi(row[1]) : 0;
+        if (row[2]) {
+            strncpy(entries[count].finished_at, row[2], sizeof(entries[count].finished_at) - 1);
+            entries[count].finished_at[sizeof(entries[count].finished_at) - 1] = '\0';
+        } else {
+            entries[count].finished_at[0] = '\0';
+        }
+        count++;
+    }
+    
+    mysql_free_result(result);
+    return count;
+}

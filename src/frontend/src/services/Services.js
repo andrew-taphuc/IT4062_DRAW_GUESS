@@ -634,6 +634,18 @@ class Services {
     }
 
     /**
+     * Lấy lịch sử chơi của người dùng
+     */
+    getGameHistory() {
+        const message = {
+            type: 'get_game_history',
+            data: {}
+        };
+        this.send(message);
+        return this.waitFor('game_history_response', () => true, 5000);
+    }
+
+    /**
      * Ngắt kết nối
      */
     disconnect() {

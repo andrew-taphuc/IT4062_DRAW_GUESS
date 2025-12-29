@@ -96,6 +96,7 @@ html, body {
   transform: translateY(-50%);
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .header-center {
@@ -199,6 +200,16 @@ html, body {
   background: linear-gradient(135deg, #ff5252 0%, #e53935 100%);
 }
 
+.user-menu-item-back {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.user-menu-item-back:hover {
+  background: linear-gradient(135deg, #ffcc00 0%, #ff9800 100%);
+}
+
 .username {
   font-size: 1.1rem;
   color: #ffffff;
@@ -228,6 +239,37 @@ html, body {
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+}
+
+.btn-back-menu {
+  padding: 0;
+}
+
+.btn-back-menu button {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
+  color: #2c3e50;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 24px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 179, 0, 0.3);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.btn-back-menu button:hover {
+  background: linear-gradient(135deg, #ffcc00 0%, #ff9800 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 179, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-back-menu button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 179, 0, 0.3);
 }
 
 .btn-logout {
@@ -468,131 +510,132 @@ html, body {
 }
 
 @keyframes duckWalk {
-  /* Đi chậm từ trái sang */
+  /* Bắt đầu từ giữa lệch phải một chút */
   0% {
-    left: -100px;
-    transform: scaleX(1);
+    left: 58%;
+    transform: translateX(-50%) scaleX(1);
   }
-  15% {
-    left: 10%;
-    transform: scaleX(1);
+  /* Đi chậm sang phải */
+  8% {
+    left: 68%;
+    transform: translateX(-50%) scaleX(1);
   }
-  /* Chạy nhanh một đoạn */
-  16% {
-    left: 10%;
-    transform: scaleX(1);
+  /* Chạy nhanh sang phải */
+  9% {
+    left: 60%;
+    transform: translateX(-50%) scaleX(1);
   }
-  18% {
-    left: 25%;
-    transform: scaleX(1);
-  }
-  /* Đi chậm tiếp */
-  19% {
-    left: 25%;
-    transform: scaleX(1);
-  }
-  30% {
-    left: 40%;
-    transform: scaleX(1);
-  }
-  /* Chạy nhanh một đoạn */
-  31% {
-    left: 40%;
-    transform: scaleX(1);
-  }
-  33% {
-    left: 55%;
-    transform: scaleX(1);
+  12% {
+    left: 75%;
+    transform: translateX(-50%) scaleX(1);
   }
   /* Đi chậm tiếp */
-  34% {
-    left: 55%;
-    transform: scaleX(1);
+  13% {
+    left: 75%;
+    transform: translateX(-50%) scaleX(1);
   }
-  45% {
-    left: 70%;
-    transform: scaleX(1);
+  22% {
+    left: 90%;
+    transform: translateX(-50%) scaleX(1);
+  }
+  /* Chạy nhanh ra ngoài */
+  23% {
+    left: 90%;
+    transform: translateX(-50%) scaleX(1);
+  }
+  25% {
+    left: calc(100% + 100px);
+    transform: translateX(-50%) scaleX(-1);
+  }
+  /* Quay đầu, đi chậm từ phải vào */
+  26% {
+    left: calc(100% + 100px);
+    transform: translateX(-50%) scaleX(-1);
+  }
+  35% {
+    left: 85%;
+    transform: translateX(-50%) scaleX(-1);
   }
   /* Chạy nhanh một đoạn */
-  46% {
-    left: 70%;
-    transform: scaleX(1);
-  }
-  48% {
+  36% {
     left: 85%;
-    transform: scaleX(1);
+    transform: translateX(-50%) scaleX(-1);
   }
-  /* Đi chậm đến cuối */
-  49% {
-    left: 85%;
-    transform: scaleX(1);
+  39% {
+    left: 65%;
+    transform: translateX(-50%) scaleX(-1);
+  }
+  /* Đi chậm về giữa */
+  40% {
+    left: 65%;
+    transform: translateX(-50%) scaleX(-1);
   }
   50% {
-    left: calc(100% + 0px);
-    transform: scaleX(-1);
+    left: 58%;
+    transform: translateX(-50%) scaleX(-1);
   }
-  /* Quay lại - đi chậm từ phải sang */
+  /* Dừng lại ở giữa ngắm cảnh */
   51% {
-    left: calc(100% + 0px);
-    transform: scaleX(-1);
+    left: 58%;
+    transform: translateX(-50%) scaleX(-1);
   }
-  65% {
-    left: 90%;
-    transform: scaleX(-1);
+  57% {
+    left: 58%;
+    transform: translateX(-50%) scaleX(-1);
   }
-  /* Chạy nhanh một đoạn */
-  66% {
-    left: 90%;
-    transform: scaleX(-1);
+  /* Đi chậm sang trái */
+  58% {
+    left: 58%;
+    transform: translateX(-50%) scaleX(-1);
   }
+  67% {
+    left: 35%;
+    transform: translateX(-50%) scaleX(-1);
+  }
+  /* Chạy nhanh sang trái */
   68% {
-    left: 75%;
-    transform: scaleX(-1);
+    left: 35%;
+    transform: translateX(-50%) scaleX(-1);
+  }
+  71% {
+    left: 15%;
+    transform: translateX(-50%) scaleX(-1);
   }
   /* Đi chậm tiếp */
-  69% {
-    left: 75%;
-    transform: scaleX(-1);
+  72% {
+    left: 15%;
+    transform: translateX(-50%) scaleX(-1);
   }
-  80% {
-    left: 60%;
-    transform: scaleX(-1);
+  74% {
+    left: -100px;
+    transform: translateX(-50%) scaleX(1);
+  }
+  /* Quay đầu, đi từ trái vào */
+  75% {
+    left: -100px;
+    transform: translateX(-50%) scaleX(1);
+  }
+  85% {
+    left: 20%;
+    transform: translateX(-50%) scaleX(1);
   }
   /* Chạy nhanh một đoạn */
-  81% {
-    left: 60%;
-    transform: scaleX(-1);
+  86% {
+    left: 20%;
+    transform: translateX(-50%) scaleX(1);
   }
-  83% {
-    left: 45%;
-    transform: scaleX(-1);
+  89% {
+    left: 35%;
+    transform: translateX(-50%) scaleX(1);
   }
-  /* Đi chậm tiếp */
-  84% {
-    left: 45%;
-    transform: scaleX(-1);
-  }
-  95% {
-    left: 30%;
-    transform: scaleX(-1);
-  }
-  /* Chạy nhanh một đoạn */
-  96% {
-    left: 30%;
-    transform: scaleX(-1);
-  }
-  98% {
-    left: 15%;
-    transform: scaleX(-1);
-  }
-  /* Đi chậm về đầu */
-  99% {
-    left: 15%;
-    transform: scaleX(-1);
+  /* Đi chậm về giữa */
+  90% {
+    left: 43%;
+    transform: translateX(-50%) scaleX(1);
   }
   100% {
-    left: -100px;
-    transform: scaleX(1);
+    left: 58%;
+    transform: translateX(-50%) scaleX(1);
   }
 }
 
@@ -756,6 +799,11 @@ html, body {
   .username {
     font-size: 0.95rem;
     max-width: 150px;
+  }
+  
+  .btn-back-menu button {
+    padding: 8px 18px;
+    font-size: 0.9rem;
   }
   
   .btn-logout button {

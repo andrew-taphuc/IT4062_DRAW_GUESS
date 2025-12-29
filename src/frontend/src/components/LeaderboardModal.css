@@ -1,0 +1,398 @@
+/* Backdrop - Mờ nhẹ, không tối */
+.leaderboard-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal chính với hiệu ứng bounce */
+.leaderboard-modal {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  min-width: 500px;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  position: relative;
+  animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Close button */
+.leaderboard-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #f5f5f5;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  color: #666;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.leaderboard-close-btn:hover {
+  background: #ff5252;
+  color: white;
+  transform: rotate(90deg);
+}
+
+/* Title */
+.leaderboard-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Winner Section */
+.winner-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border-radius: 20px;
+  margin-bottom: 30px;
+  position: relative;
+  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3);
+  animation: winnerPulse 2s ease-in-out infinite;
+}
+
+@keyframes winnerPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.winner-crown {
+  font-size: 3rem;
+  margin-bottom: -20px;
+  z-index: 2;
+  animation: crownFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+@keyframes crownFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.winner-avatar-container {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 5px solid rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.winner-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.winner-avatar-emoji {
+  font-size: 4rem;
+}
+
+.winner-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.winner-score {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  padding: 8px 20px;
+  border-radius: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+/* Rankings Section */
+.rankings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  transition: all 0.3s;
+  cursor: default;
+}
+
+.ranking-item:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+.ranking-number {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #666;
+  min-width: 45px;
+  text-align: center;
+}
+
+.ranking-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ranking-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.ranking-avatar-emoji {
+  font-size: 2rem;
+}
+
+.ranking-name {
+  flex: 1;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.ranking-score {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2196f3;
+  text-align: right;
+  min-width: 100px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .leaderboard-modal {
+    min-width: 90%;
+    max-width: 90%;
+    padding: 30px 20px;
+    max-height: 85vh;
+  }
+
+  .leaderboard-title {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+  }
+
+  .winner-section {
+    padding: 20px 15px;
+    margin-bottom: 20px;
+  }
+
+  .winner-crown {
+    font-size: 2.5rem;
+    margin-bottom: -15px;
+  }
+
+  .winner-avatar-container {
+    width: 100px;
+    height: 100px;
+    border-width: 4px;
+  }
+
+  .winner-avatar-emoji {
+    font-size: 3rem;
+  }
+
+  .winner-name {
+    font-size: 1.3rem;
+  }
+
+  .winner-score {
+    font-size: 1.5rem;
+    padding: 6px 16px;
+  }
+
+  .ranking-item {
+    padding: 12px 15px;
+  }
+
+  .ranking-number {
+    font-size: 1rem;
+    min-width: 35px;
+  }
+
+  .ranking-avatar {
+    width: 45px;
+    height: 45px;
+    margin-right: 12px;
+  }
+
+  .ranking-avatar-emoji {
+    font-size: 1.8rem;
+  }
+
+  .ranking-name {
+    font-size: 1rem;
+  }
+
+  .ranking-score {
+    font-size: 1.1rem;
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .leaderboard-modal {
+    padding: 25px 15px;
+  }
+
+  .leaderboard-title {
+    font-size: 1.4rem;
+  }
+
+  .winner-crown {
+    font-size: 2rem;
+  }
+
+  .winner-avatar-container {
+    width: 80px;
+    height: 80px;
+    border-width: 3px;
+  }
+
+  .winner-avatar-emoji {
+    font-size: 2.5rem;
+  }
+
+  .winner-name {
+    font-size: 1.1rem;
+  }
+
+  .winner-score {
+    font-size: 1.3rem;
+    padding: 6px 14px;
+  }
+
+  .ranking-item {
+    padding: 10px 12px;
+  }
+
+  .ranking-number {
+    font-size: 0.9rem;
+    min-width: 30px;
+  }
+
+  .ranking-avatar {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+  }
+
+  .ranking-avatar-emoji {
+    font-size: 1.5rem;
+  }
+
+  .ranking-name {
+    font-size: 0.95rem;
+  }
+
+  .ranking-score {
+    font-size: 1rem;
+    min-width: 70px;
+  }
+}
+
+/* Scrollbar styling */
+.leaderboard-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.leaderboard-modal::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.leaderboard-modal::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.leaderboard-modal::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+

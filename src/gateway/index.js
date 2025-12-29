@@ -242,6 +242,9 @@ class Gateway {
             case 'chat_message':
                 payload = this.createChatMessagePayload(message.data);
                 break;
+            case 'get_game_history':
+                payload = this.createGetGameHistoryPayload(message.data);
+                break;
             // import các case khác ở đây
             default:
                 Logger.warn('Unknown message type:', message.type);
@@ -328,6 +331,9 @@ class Gateway {
             case 0x31: // CHAT_BROADCAST
                 parsedData = this.parseChatBroadcast(payload);
                 break;
+            case 0x41: // GAME_HISTORY_RESPONSE
+                parsedData = this.parseGameHistoryResponse(payload);
+                break;
             default:
                 Logger.warn('Unknown message type from server:', type);
                 parsedData = { raw: payload.toString('hex') };
@@ -353,6 +359,7 @@ class Gateway {
             'draw_data': 0x22,
             'guess_word': 0x24,
             'chat_message': 0x30,
+            'get_game_history': 0x40,
             // import các message khác ở đây
         };
 
@@ -380,6 +387,7 @@ class Gateway {
             0x27: 'round_end',
             0x28: 'game_end',
             0x23: 'draw_broadcast',
+            0x41: 'game_history_response',
             0x31: 'chat_broadcast',
             // import các message khác ở đây
         };
@@ -459,6 +467,11 @@ class Gateway {
         const buffer = Buffer.alloc(256);
         buffer.write((data && data.message) ? String(data.message) : '', 0, 256, 'utf8');
         return buffer;
+    }
+
+    createGetGameHistoryPayload(data) {
+        // No payload needed, server uses user_id from authenticated session
+        return Buffer.alloc(0);
     }
 
     // import các play load khác ở đây
@@ -792,6 +805,39 @@ class Gateway {
             timestamp = hi * 4294967296 + lo;
         }
         return { username, message, timestamp };
+    }
+
+    parseGameHistoryResponse(payload) {
+        // count(2) + entries (score(4) + rank(4) + finished_at(32)) * count
+        if (payload.length < 2) {
+            Logger.warn('GAME_HISTORY_RESPONSE payload too short');
+            return { error: 'Invalid payload', history: [] };
+        }
+        
+        const count = payload.readUInt16BE(0);
+        const history = [];
+        let offset = 2;
+        
+        for (let i = 0; i < count; i++) {
+            if (offset + 40 > payload.length) break;
+            
+            // Read score (4 bytes, signed int32)
+            const score_raw = payload.readUInt32BE(offset);
+            const score = score_raw > 0x7FFFFFFF ? score_raw - 0x100000000 : score_raw;
+            
+            // Read rank (4 bytes, signed int32)
+            const rank_raw = payload.readUInt32BE(offset + 4);
+            const rank = rank_raw > 0x7FFFFFFF ? rank_raw - 0x100000000 : rank_raw;
+            
+            // Read finished_at (32 bytes, null-terminated string)
+            const finished_at = payload.slice(offset + 8, offset + 40).toString('utf8').replace(/\0/g, '');
+            
+            history.push({ score, rank, finished_at });
+            offset += 40;
+        }
+        
+        Logger.info(`[Gateway] Parsed game history: ${count} entries`);
+        return { history };
     }
 
     // parse response khác ở đây

@@ -46,6 +46,10 @@
 #define MSG_CHAT_MESSAGE         0x30
 #define MSG_CHAT_BROADCAST       0x31
 
+// History (0x40 - 0x4F)
+#define MSG_GET_GAME_HISTORY     0x40
+#define MSG_GAME_HISTORY_RESPONSE 0x41
+
 // ============================================
 // CONSTANTS
 // ============================================

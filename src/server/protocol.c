@@ -14,6 +14,7 @@ extern int protocol_handle_start_game(server_t* server, int client_index, const 
 extern int protocol_handle_guess_word(server_t* server, int client_index, const message_t* msg);
 extern int protocol_handle_logout(server_t* server, int client_index, const message_t* msg);
 extern int protocol_handle_chat_message(server_t* server, int client_index, const message_t* msg);
+extern int protocol_handle_get_game_history(server_t* server, int client_index, const message_t* msg);
 
 /**
  * Xu ly message nhan duoc tu client
@@ -56,6 +57,9 @@ int protocol_handle_message(server_t* server, int client_index, const message_t*
 
         case MSG_CHAT_MESSAGE:
             return protocol_handle_chat_message(server, client_index, msg);
+
+        case MSG_GET_GAME_HISTORY:
+            return protocol_handle_get_game_history(server, client_index, msg);
             
         default:
             fprintf(stderr, "Unknown message type: 0x%02X tu client %d\n", 
