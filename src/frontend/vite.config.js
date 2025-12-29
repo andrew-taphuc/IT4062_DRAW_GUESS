@@ -10,22 +10,17 @@ export default defineConfig({
     }
   },
   build: {
-    // Tăng memory limit và optimize cho VPS
+    // Optimize cho VPS
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
-          // Tách react-icons ra chunk riêng để tránh treo khi build
-          'react-icons': ['react-icons/io5', 'react-icons/fa', 'react-icons/md'],
+          // Tách React vendor ra chunk riêng
           'react-vendor': ['react', 'react-dom', 'react-router-dom']
         }
       }
     },
     // Sử dụng esbuild minify (nhanh hơn terser, ít tốn memory hơn)
     minify: 'esbuild'
-  },
-  // Optimize dependencies
-  optimizeDeps: {
-    include: ['react-icons/io5', 'react-icons/fa', 'react-icons/md']
   }
 })

@@ -1,8 +1,5 @@
 import React from 'react';
 import './RoomCard.css';
-import { IoGameController } from 'react-icons/io5';
-import { FaUsers, FaCrown, FaCheck } from 'react-icons/fa';
-import { MdCircle } from 'react-icons/md';
 
 // Mảng các gradient màu đẹp
 const gradientColors = [
@@ -50,30 +47,30 @@ export default function RoomCard({ room, onJoin }) {
       style={{ cursor: room.canJoin ? 'pointer' : 'not-allowed' }}
     >
       <div className="room-icon" style={{ background: getGradientColor() }}>
-        <IoGameController className="icon" />
+        <span className="icon-emoji">🎮</span>
       </div>
       <div className="room-info">
         <h3 className="room-name">{room.name || `Phòng #${room.id}`}</h3>
         <div className="room-details">
           <span className="detail-item">
-            <FaUsers className="icon" />
+            <span className="icon-emoji">👥</span>
             {room.currentPlayers || 0}/{room.maxPlayers || 8}
           </span>
           <span className="detail-item">
-            <MdCircle className="icon" style={{ color: getStateColor(room.state) }} />
+            <span className="icon-emoji" style={{ color: getStateColor(room.state) }}>●</span>
             <span style={{ color: getStateColor(room.state) }}>
               {room.stateText || 'Không xác định'}
             </span>
           </span>
           <span className="detail-item">
-            <FaCrown className="icon" />
+            <span className="icon-emoji">👑</span>
             {room.isOfficial ? 'Hệ thống' : (room.ownerUsername || `User ${room.ownerId}`)}
           </span>
         </div>
       </div>
       {room.isOfficial && (
         <div className="official-badge">
-          <FaCheck />
+          <span className="icon-emoji">✓</span>
         </div>
       )}
     </div>
