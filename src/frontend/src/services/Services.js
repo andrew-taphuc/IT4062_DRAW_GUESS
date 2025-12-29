@@ -542,7 +542,9 @@ class Services {
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
         const a = 255;
-        return (r << 24) | (g << 16) | (b << 8) | a;
+        // Sử dụng >>> 0 để đảm bảo kết quả là unsigned 32-bit integer
+        // Tránh lỗi khi ghi vào buffer với các màu có giá trị lớn
+        return ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
     }
 
     /**
