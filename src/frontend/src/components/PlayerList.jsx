@@ -40,7 +40,6 @@ export default function PlayerList({ players, currentUserId, startButton }) {
               ) : (
                 <span className="avatar-emoji">{player.avatar || '👤'}</span>
               )}
-              {player.isDrawing && <span className="drawing-badge">✏️</span>}
             </div>
             <div className="player-info">
               <div className="player-name">
@@ -49,6 +48,7 @@ export default function PlayerList({ players, currentUserId, startButton }) {
               </div>
               <div className="player-score">{player.score || 0} điểm</div>
             </div>
+            {player.isDrawing && <span className="drawing-icon">✏️</span>}
           </div>
         ))}
       </div>

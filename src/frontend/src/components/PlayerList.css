@@ -40,8 +40,16 @@
 }
 
 .player-item.drawing {
-  background: #fff3e0;
-  border: 2px solid #ff9800;
+  background: #ffe0b2;
+  border: 2px solid #ff6f00;
+  box-shadow: 0 2px 8px rgba(255, 111, 0, 0.3);
+}
+
+.drawing-icon {
+  font-size: 1.2rem;
+  margin-left: auto;
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
 }
 
 .player-item.empty-slot {
@@ -71,21 +79,6 @@
 
 .player-avatar .avatar-emoji {
   color: white;
-}
-
-.drawing-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ff9800;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  border: 2px solid white;
 }
 
 .player-info {
@@ -171,12 +164,6 @@
     font-size: 1.6rem;
   }
   
-  .drawing-badge {
-    width: 20px;
-    height: 20px;
-    font-size: 0.8rem;
-  }
-  
   .player-name {
     font-size: 0.95rem;
   }
@@ -246,14 +233,6 @@
     width: 35px;
     height: 35px;
     font-size: 1.2rem;
-  }
-  
-  .drawing-badge {
-    width: 18px;
-    height: 18px;
-    font-size: 0.7rem;
-    top: -3px;
-    right: -3px;
   }
   
   .player-name {

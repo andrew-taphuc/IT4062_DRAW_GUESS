@@ -272,9 +272,12 @@ export default function GameRoom({
         { type: 'system', username: '', text: `Hết round! Từ đúng là: "${data.word}"` }
       ]);
       setIsDrawing(false);
+      setCurrentDrawerId(null); // Xóa drawer hiện tại
       setWord('');
       setWordLength(0);
       setCategory('');
+      // Xóa khung cam cho tất cả players
+      setPlayers((prev) => (prev || []).map(p => ({ ...p, isDrawing: false })));
     };
 
     const handleGameEnd = (data) => {
@@ -286,9 +289,12 @@ export default function GameRoom({
         { type: 'system', username: '', text: `Kết thúc game! Winner: ${data.winner_id}` }
       ]);
       setIsDrawing(false);
+      setCurrentDrawerId(null); // Xóa drawer hiện tại
       setWord('');
       setWordLength(0);
       setCategory('');
+      // Xóa khung cam cho tất cả players
+      setPlayers((prev) => (prev || []).map(p => ({ ...p, isDrawing: false })));
       // Hiển thị modal bảng xếp hạng
       setShowLeaderboard(true);
     };

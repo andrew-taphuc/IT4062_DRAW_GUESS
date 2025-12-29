@@ -11,12 +11,58 @@ const Canvas = forwardRef(function Canvas(
   const [currentColor, setCurrentColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
   const [isEraser, setIsEraser] = useState(false);
+  const [isClearPressed, setIsClearPressed] = useState(false);
+  const [isEraserPressed, setIsEraserPressed] = useState(false);
+
+  // Kích thước canvas chuẩn (phải khớp với MAX_CANVAS_WIDTH và MAX_CANVAS_HEIGHT trong drawing.h)
+  const STANDARD_CANVAS_WIDTH = 1920;
+  const STANDARD_CANVAS_HEIGHT = 1080;
+
+  // Danh sách màu cơ bản
+  const colorPalette = [
+    '#000000', // Đen
+    '#FFFFFF', // Trắng
+    '#FF0000', // Đỏ
+    '#00FF00', // Xanh lá
+    '#0000FF', // Xanh dương
+    '#FFFF00', // Vàng
+    '#FF00FF', // Magenta
+    '#00FFFF', // Cyan
+    '#FFA500', // Cam
+    '#800080', // Tím
+    '#FFC0CB', // Hồng
+    '#A52A2A', // Nâu
+  ];
 
   const initCanvasSize = () => {
     const canvas = canvasElRef.current;
     if (!canvas) return;
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
+  };
+
+  // Chuyển đổi tọa độ từ canvas thực tế sang tọa độ chuẩn (0-1920, 0-1080)
+  const normalizeCoordinates = (x, y) => {
+    const canvas = canvasElRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const scaleX = STANDARD_CANVAS_WIDTH / canvas.width;
+    const scaleY = STANDARD_CANVAS_HEIGHT / canvas.height;
+    return {
+      x: Math.round(x * scaleX),
+      y: Math.round(y * scaleY)
+    };
+  };
+
+  // Chuyển đổi tọa độ từ chuẩn về canvas thực tế
+  const denormalizeCoordinates = (x, y) => {
+    const canvas = canvasElRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const scaleX = canvas.width / STANDARD_CANVAS_WIDTH;
+    const scaleY = canvas.height / STANDARD_CANVAS_HEIGHT;
+    return {
+      x: x * scaleX,
+      y: y * scaleY
+    };
   };
 
   useEffect(() => {
@@ -45,13 +91,18 @@ const Canvas = forwardRef(function Canvas(
 
       if (data.action === 1 || data.action === 3) {
         const colorHex = data.action === 3 ? '#FFFFFF' : (data.colorHex || '#000000');
+        
+        // Denormalize tọa độ từ chuẩn về canvas thực tế
+        const p1 = denormalizeCoordinates(data.x1 || 0, data.y1 || 0);
+        const p2 = denormalizeCoordinates(data.x2 || 0, data.y2 || 0);
+        
         ctx.strokeStyle = colorHex;
         ctx.lineWidth = data.width || 5;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.moveTo(data.x1 || 0, data.y1 || 0);
-        ctx.lineTo(data.x2 || 0, data.y2 || 0);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
         ctx.stroke();
       }
     }
@@ -91,12 +142,16 @@ const Canvas = forwardRef(function Canvas(
     ctx.stroke();
 
     if (onDraw) {
+      // Normalize tọa độ về kích thước chuẩn trước khi gửi
+      const normalizedP1 = normalizeCoordinates(p1.x, p1.y);
+      const normalizedP2 = normalizeCoordinates(p2.x, p2.y);
+      
       onDraw({
         action: 1,
-        x1: p1.x,
-        y1: p1.y,
-        x2: p2.x,
-        y2: p2.y,
+        x1: normalizedP1.x,
+        y1: normalizedP1.y,
+        x2: normalizedP2.x,
+        y2: normalizedP2.y,
         color: currentColor,
         width: brushSize,
         isEraser
@@ -131,14 +186,29 @@ const Canvas = forwardRef(function Canvas(
       )}
 
       <div className="canvas-tools">
-        <div className="tool-group">
+        <div className="tool-group color-picker-group">
           <label>Màu:</label>
-          <input
-            type="color"
-            value={currentColor}
-            onChange={(e) => setCurrentColor(e.target.value)}
-            disabled={!canDraw || isEraser}
-          />
+          <div className="color-palette">
+            {colorPalette.map((color) => (
+              <button
+                key={color}
+                type="button"
+                className={`color-btn ${currentColor === color ? 'active' : ''}`}
+                style={{ backgroundColor: color }}
+                onClick={() => !isEraser && setCurrentColor(color)}
+                disabled={!canDraw || isEraser}
+                title={color}
+              />
+            ))}
+            <input
+              type="color"
+              className="color-picker-input"
+              value={currentColor}
+              onChange={(e) => !isEraser && setCurrentColor(e.target.value)}
+              disabled={!canDraw || isEraser}
+              title="Chọn màu tùy chỉnh"
+            />
+          </div>
         </div>
         <div className="tool-group">
           <label>Size:</label>
@@ -152,19 +222,27 @@ const Canvas = forwardRef(function Canvas(
           />
           <span>{brushSize}</span>
         </div>
-        <div className="tool-group">
-          <label>
-            <input
-              type="checkbox"
-              checked={isEraser}
-              onChange={(e) => setIsEraser(e.target.checked)}
-              disabled={!canDraw}
-            />
-            Tẩy
-          </label>
-        </div>
-        <button className="clear-btn" onClick={clearCanvas} disabled={!canDraw}>
-          Xóa
+        <button 
+          className={`eraser-btn ${isEraser ? 'active' : ''} ${isEraserPressed ? 'pressed' : ''}`}
+          onClick={() => setIsEraser(!isEraser)}
+          onMouseDown={() => setIsEraserPressed(true)}
+          onMouseUp={() => setIsEraserPressed(false)}
+          onMouseLeave={() => setIsEraserPressed(false)}
+          disabled={!canDraw}
+          title="Tẩy"
+        >
+          🧽
+        </button>
+        <button 
+          className={`clear-btn ${isClearPressed ? 'pressed' : ''}`}
+          onClick={clearCanvas} 
+          onMouseDown={() => setIsClearPressed(true)}
+          onMouseUp={() => setIsClearPressed(false)}
+          onMouseLeave={() => setIsClearPressed(false)}
+          disabled={!canDraw}
+          title="Xóa canvas"
+        >
+          🧹
         </button>
       </div>
 
