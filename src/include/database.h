@@ -70,6 +70,18 @@ int db_register_user(db_connection_t* db, const char* username, const char* pass
 int db_authenticate_user(db_connection_t* db, const char* username, const char* password_hash);
 
 /**
+ * Đổi mật khẩu của người dùng
+ * @param db Con trỏ đến db_connection_t
+ * @param user_id ID của người dùng
+ * @param old_password_hash Mật khẩu cũ đã hash (SHA256)
+ * @param new_password_hash Mật khẩu mới đã hash (SHA256)
+ * @return 0 nếu thành công, -1 nếu thất bại
+ */
+int db_change_password(db_connection_t* db, int user_id, 
+                       const char* old_password_hash, 
+                       const char* new_password_hash);
+
+/**
  * Nạp danh sách từ từ file vào database (bảng words).
  *
  * Format mỗi dòng (bỏ qua dòng trống hoặc bắt đầu bằng #):

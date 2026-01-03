@@ -287,6 +287,9 @@ class Gateway {
             case 'get_game_history':
                 payload = this.createGetGameHistoryPayload(message.data);
                 break;
+            case 'change_password':
+                payload = this.createChangePasswordPayload(message.data);
+                break;
             // import các case khác ở đây
             default:
                 Logger.warn('Unknown message type:', message.type);
@@ -382,6 +385,9 @@ class Gateway {
             case 0x51: // ACCOUNT_LOGGED_IN_ELSEWHERE
                 parsedData = { message: 'Tài khoản của bạn đang được đăng nhập ở nơi khác.' };
                 break;
+            case 0x07: // CHANGE_PASSWORD_RESPONSE
+                parsedData = this.parseChangePasswordResponse(payload);
+                break;
             default:
                 Logger.warn('Unknown message type from server:', type);
                 parsedData = { raw: payload.toString('hex') };
@@ -408,6 +414,7 @@ class Gateway {
             'guess_word': 0x24,
             'chat_message': 0x30,
             'get_game_history': 0x40,
+            'change_password': 0x06,
             // import các message khác ở đây
         };
 
@@ -439,6 +446,7 @@ class Gateway {
             0x31: 'chat_broadcast',
             0x50: 'server_shutdown',
             0x51: 'account_logged_in_elsewhere',
+            0x07: 'change_password_response',
             // import các message khác ở đây
         };
         return types[type] || 'unknown';
@@ -524,6 +532,14 @@ class Gateway {
         return Buffer.alloc(0);
     }
 
+    createChangePasswordPayload(data) {
+        // Payload: old_password(32) + new_password(32) = 64 bytes
+        const buffer = Buffer.alloc(64);
+        buffer.write((data && data.old_password) ? String(data.old_password) : '', 0, 32, 'utf8');
+        buffer.write((data && data.new_password) ? String(data.new_password) : '', 32, 32, 'utf8');
+        return buffer;
+    }
+
     // import các play load khác ở đây
 
     // Payload parsers
@@ -539,6 +555,16 @@ class Gateway {
     }
 
     parseRegisterResponse(payload) {
+        const status = payload.readUInt8(0);
+        const message = payload.slice(1, 129).toString('utf8').replace(/\0/g, '');
+
+        return {
+            status: status === 0 ? 'success' : 'error',
+            message: message
+        };
+    }
+
+    parseChangePasswordResponse(payload) {
         const status = payload.readUInt8(0);
         const message = payload.slice(1, 129).toString('utf8').replace(/\0/g, '');
 

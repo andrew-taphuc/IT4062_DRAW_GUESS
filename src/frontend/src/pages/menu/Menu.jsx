@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import HistoryModal from '../../components/HistoryModal';
+import ChangePasswordModal from '../../components/ChangePasswordModal';
 import './Menu.css';
 
 export default function Menu() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showHistory, setShowHistory] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [duckJumping, setDuckJumping] = useState(false);
 
   const handleGoToLobby = () => {
@@ -31,6 +33,14 @@ export default function Menu() {
     setShowHistory(false);
   };
 
+  const handleShowChangePassword = () => {
+    setShowChangePassword(true);
+  };
+
+  const handleCloseChangePassword = () => {
+    setShowChangePassword(false);
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -39,6 +49,7 @@ export default function Menu() {
   return (
     <div className="menu-page">
       <HistoryModal show={showHistory} onClose={handleCloseHistory} />
+      <ChangePasswordModal show={showChangePassword} onClose={handleCloseChangePassword} />
       
       <div className="menu-container">
         <div className="menu-header">
@@ -62,6 +73,9 @@ export default function Menu() {
           </button>
           <button className="menu-btn menu-btn-secondary" onClick={handleShowHistory}>
             Lịch Sử Chơi
+          </button>
+          <button className="menu-btn menu-btn-secondary" onClick={handleShowChangePassword}>
+            Đổi Mật Khẩu
           </button>
         </div>
 

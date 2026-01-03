@@ -53,6 +53,24 @@ int protocol_send_register_response(int client_fd, uint8_t status, const char* m
 }
 
 /**
+ * Gui CHANGE_PASSWORD_RESPONSE
+ */
+int protocol_send_change_password_response(int client_fd, uint8_t status, const char* message) {
+    change_password_response_t response;
+    memset(&response, 0, sizeof(response));
+    
+    response.status = status;
+    
+    if (message) {
+        strncpy(response.message, message, sizeof(response.message) - 1);
+        response.message[sizeof(response.message) - 1] = '\0';
+    }
+
+    return protocol_send_message(client_fd, MSG_CHANGE_PASSWORD_RESPONSE, 
+                                (uint8_t*)&response, sizeof(response));
+}
+
+/**
  * Gui thong bao tai khoan dang duoc dang nhap o noi khac
  */
 int protocol_send_account_logged_in_elsewhere(int client_fd) {
@@ -371,5 +389,96 @@ int protocol_handle_logout(server_t* server, int client_index, const message_t* 
 
     printf("Client %d logout thanh cong\n", client_index);
     return 0;
+}
+
+/**
+ * Xu ly CHANGE_PASSWORD_REQUEST
+ */
+int protocol_handle_change_password(server_t* server, int client_index, const message_t* msg) {
+    if (!server || client_index < 0 || client_index >= MAX_CLIENTS || !msg) {
+        return -1;
+    }
+
+    client_t* client = &server->clients[client_index];
+    if (!client->active) {
+        return -1;
+    }
+
+    // Kiem tra client da dang nhap chua
+    if (client->state != CLIENT_STATE_LOGGED_IN || client->user_id <= 0) {
+        protocol_send_change_password_response(client->fd, STATUS_AUTH_FAILED, 
+                                             "Ban chua dang nhap");
+        return -1;
+    }
+
+    // Kiem tra payload size
+    if (msg->length < sizeof(change_password_request_t)) {
+        protocol_send_change_password_response(client->fd, STATUS_ERROR, 
+                                             "Du lieu khong hop le");
+        return -1;
+    }
+
+    // Parse payload
+    change_password_request_t* req = (change_password_request_t*)msg->payload;
+    
+    // Dam bao null-terminated
+    char old_password[MAX_PASSWORD_LEN];
+    char new_password[MAX_PASSWORD_LEN];
+    strncpy(old_password, req->old_password, MAX_PASSWORD_LEN - 1);
+    old_password[MAX_PASSWORD_LEN - 1] = '\0';
+    strncpy(new_password, req->new_password, MAX_PASSWORD_LEN - 1);
+    new_password[MAX_PASSWORD_LEN - 1] = '\0';
+
+    printf("Nhan CHANGE_PASSWORD_REQUEST tu client %d: user_id=%d\n", 
+           client_index, client->user_id);
+
+    // Validate new password
+    if (!auth_validate_password(new_password)) {
+        protocol_send_change_password_response(client->fd, STATUS_INVALID_PASSWORD, 
+                                             "Mat khau moi khong hop le");
+        return -1;
+    }
+
+    // Kiem tra database connection
+    if (!db) {
+        protocol_send_change_password_response(client->fd, STATUS_ERROR, 
+                                             "Loi ket noi database");
+        return -1;
+    }
+
+    // Hash old password
+    char old_password_hash[65];
+    if (auth_hash_password(old_password, old_password_hash) != 0) {
+        protocol_send_change_password_response(client->fd, STATUS_ERROR, 
+                                             "Loi xu ly mat khau cu");
+        return -1;
+    }
+
+    // Hash new password
+    char new_password_hash[65];
+    if (auth_hash_password(new_password, new_password_hash) != 0) {
+        protocol_send_change_password_response(client->fd, STATUS_ERROR, 
+                                             "Loi xu ly mat khau moi");
+        return -1;
+    }
+
+    // Doi mat khau
+    int result = db_change_password(db, client->user_id, old_password_hash, new_password_hash);
+    
+    if (result == 0) {
+        // Doi mat khau thanh cong
+        protocol_send_change_password_response(client->fd, STATUS_SUCCESS, 
+                                             "Doi mat khau thanh cong");
+        printf("Client %d doi mat khau thanh cong: user_id=%d\n", 
+               client_index, client->user_id);
+        return 0;
+    } else {
+        // Doi mat khau that bai (mat khau cu khong dung)
+        protocol_send_change_password_response(client->fd, STATUS_AUTH_FAILED, 
+                                             "Mat khau cu khong dung");
+        printf("Client %d doi mat khau that bai: user_id=%d\n", 
+               client_index, client->user_id);
+        return -1;
+    }
 }
 

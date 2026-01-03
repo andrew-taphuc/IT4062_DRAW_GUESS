@@ -19,6 +19,8 @@
 #define MSG_REGISTER_REQUEST     0x03
 #define MSG_REGISTER_RESPONSE    0x04
 #define MSG_LOGOUT               0x05
+#define MSG_CHANGE_PASSWORD_REQUEST  0x06
+#define MSG_CHANGE_PASSWORD_RESPONSE 0x07
 
 // Room Management (0x10 - 0x1F)
 #define MSG_ROOM_LIST_REQUEST    0x10
@@ -114,6 +116,20 @@ typedef struct {
     uint8_t status;              // STATUS_SUCCESS hoặc STATUS_ERROR
     char message[128];            // Thông báo lỗi hoặc thành công
 } register_response_t;
+#pragma pack()
+
+// CHANGE_PASSWORD_REQUEST payload structure
+typedef struct {
+    char old_password[MAX_PASSWORD_LEN];
+    char new_password[MAX_PASSWORD_LEN];
+} change_password_request_t;
+
+// CHANGE_PASSWORD_RESPONSE payload structure
+#pragma pack(1)
+typedef struct {
+    uint8_t status;              // STATUS_SUCCESS hoặc STATUS_ERROR
+    char message[128];            // Thông báo lỗi hoặc thành công
+} change_password_response_t;
 #pragma pack()
 
 // Room state enum (phải match với room.h)

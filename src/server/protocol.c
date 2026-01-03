@@ -15,6 +15,7 @@ extern int protocol_handle_guess_word(server_t* server, int client_index, const 
 extern int protocol_handle_logout(server_t* server, int client_index, const message_t* msg);
 extern int protocol_handle_chat_message(server_t* server, int client_index, const message_t* msg);
 extern int protocol_handle_get_game_history(server_t* server, int client_index, const message_t* msg);
+extern int protocol_handle_change_password(server_t* server, int client_index, const message_t* msg);
 
 /**
  * Xu ly message nhan duoc tu client
@@ -33,6 +34,9 @@ int protocol_handle_message(server_t* server, int client_index, const message_t*
             
         case MSG_LOGOUT:
             return protocol_handle_logout(server, client_index, msg);
+
+        case MSG_CHANGE_PASSWORD_REQUEST:
+            return protocol_handle_change_password(server, client_index, msg);
 
         case MSG_ROOM_LIST_REQUEST:
             return protocol_handle_room_list_request(server, client_index, msg);

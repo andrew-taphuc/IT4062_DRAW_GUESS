@@ -323,6 +323,65 @@ int db_authenticate_user(db_connection_t* db, const char* username,
     return user_id;
 }
 
+int db_change_password(db_connection_t* db, int user_id, 
+                       const char* old_password_hash, 
+                       const char* new_password_hash) {
+    if (!db) {
+        fprintf(stderr, "Khong ket noi duoc toi co so du lieu.\n");
+        return -1;
+    }
+    
+    if (user_id <= 0 || !old_password_hash || !new_password_hash) {
+        fprintf(stderr, "Tham so khong hop le.\n");
+        return -1;
+    }
+
+    // Kiem tra mat khau cu co dung khong
+    char user_id_str[32];
+    snprintf(user_id_str, sizeof(user_id_str), "%d", user_id);
+    
+    const char* check_query = "SELECT id FROM users WHERE id = ? AND password_hash = ?";
+    MYSQL_RES* check_result = db_execute_query(db, check_query, user_id_str, old_password_hash);
+    
+    if (!check_result) {
+        fprintf(stderr, "Khong the thuc thi query kiem tra mat khau cu.\n");
+        return -1;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(check_result);
+    if (!row) {
+        mysql_free_result(check_result);
+        fprintf(stderr, "Mat khau cu khong dung.\n");
+        return -1;
+    }
+    mysql_free_result(check_result);
+
+    // Cap nhat mat khau moi
+    const char* update_query = "UPDATE users SET password_hash = ? WHERE id = ?";
+    MYSQL_RES* update_result = db_execute_query(db, update_query, new_password_hash, user_id_str);
+    
+    // Voi UPDATE query, mysql_store_result() co the tra ve NULL nhung query van thanh cong
+    // Can kiem tra mysql_errno() de xac dinh loi
+    if (mysql_errno(db->conn)) {
+        fprintf(stderr, "Loi cap nhat mat khau: %s\n", mysql_error(db->conn));
+        if (update_result) mysql_free_result(update_result);
+        return -1;
+    }
+    
+    // Kiem tra so hang duoc cap nhat
+    my_ulonglong affected_rows = mysql_affected_rows(db->conn);
+    if (affected_rows == 0) {
+        fprintf(stderr, "Khong co hang nao duoc cap nhat. Co the user_id khong ton tai.\n");
+        if (update_result) mysql_free_result(update_result);
+        return -1;
+    }
+    
+    if (update_result) mysql_free_result(update_result);
+    
+    printf("Doi mat khau thanh cong: user_id=%d, affected_rows=%llu\n", user_id, affected_rows);
+    return 0;
+}
+
 // ---------------------------
 // Words system (Phase 5 - #17)
 // ---------------------------

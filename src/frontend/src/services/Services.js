@@ -556,6 +556,21 @@ class Services {
     }
 
     /**
+     * Đổi mật khẩu
+     */
+    changePassword(oldPassword, newPassword) {
+        const message = {
+            type: 'change_password',
+            data: {
+                old_password: oldPassword,
+                new_password: newPassword
+            }
+        };
+        this.send(message);
+        return this.waitFor('change_password_response', () => true, 5000);
+    }
+
+    /**
      * Tạo phòng mới
      */
     createRoom(roomName, maxPlayers = 8, rounds = 3, difficulty = 'easy') {
