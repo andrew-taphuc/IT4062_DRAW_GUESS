@@ -46,18 +46,18 @@ export default function LoginRegister({ onLoginSuccess }) {
     }
   }, [authError]);
 
-  // Handle successful login - navigate to lobby
+  // Handle successful login - PublicRoute sẽ tự động redirect, không cần navigate ở đây
+  // Chỉ hiển thị message thành công
   useEffect(() => {
     if (user && !isLoading) {
       setMessage({ text: 'Đăng nhập thành công!', type: 'success' });
-      setTimeout(() => {
-        navigate('/menu');
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        }
-      }, 500);
+      // PublicRoute sẽ tự động redirect về /menu khi isAuthenticated = true
+      // Không cần navigate thủ công để tránh conflict
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
     }
-  }, [user, isLoading, navigate, onLoginSuccess]);
+  }, [user, isLoading, onLoginSuccess]);
 
   // Clear message when switching tabs
   useEffect(() => {

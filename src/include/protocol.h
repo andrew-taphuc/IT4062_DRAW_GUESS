@@ -56,6 +56,13 @@ int protocol_send_login_response(int client_fd, uint8_t status, int32_t user_id,
 int protocol_send_register_response(int client_fd, uint8_t status, const char* message);
 
 /**
+ * Gửi thông báo tài khoản đang được đăng nhập ở nơi khác
+ * @param client_fd File descriptor của client socket
+ * @return 0 nếu thành công, -1 nếu lỗi
+ */
+int protocol_send_account_logged_in_elsewhere(int client_fd);
+
+/**
  * Helper function: Gửi message đến client
  * @param client_fd File descriptor của client socket
  * @param type Message type

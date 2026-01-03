@@ -50,6 +50,10 @@
 #define MSG_GET_GAME_HISTORY     0x40
 #define MSG_GAME_HISTORY_RESPONSE 0x41
 
+// System/Server (0x50 - 0x5F)
+#define MSG_SERVER_SHUTDOWN      0x50  // Server thông báo shutdown đến tất cả clients
+#define MSG_ACCOUNT_LOGGED_IN_ELSEWHERE 0x51  // Server thông báo tài khoản đang được đăng nhập ở nơi khác
+
 // ============================================
 // CONSTANTS
 // ============================================

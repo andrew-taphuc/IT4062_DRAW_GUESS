@@ -138,14 +138,77 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
     services.subscribe('room_list_response', handleRoomListResponse);
     services.subscribe('error', handleError);
 
-    // Kết nối và CHỈ load danh sách sau khi connect xong
+    // Kết nối và load danh sách phòng
+    // Đảm bảo luôn gửi request khi vào lobby (dù từ menu hay reload/trực tiếp)
+    // Sửa race condition: đợi WebSocket thực sự sẵn sàng (OPEN) trước khi gửi request
     (async () => {
-      try {
-        await services.connect();
-        loadRoomList(); // kết nối xong mới gửi request
-      } catch (error) {
-        console.error('Connection error:', error);
-        setError('Không thể kết nối đến server. Vui lòng thử lại.');
+      const MAX_RETRIES = 3;
+      let retryCount = 0;
+      
+      while (retryCount < MAX_RETRIES) {
+        try {
+          const connectionState = services.getConnectionState();
+          console.log('[Lobby] Connection state:', connectionState, 'Retry:', retryCount);
+          
+          // Nếu đã kết nối, đợi WebSocket thực sự sẵn sàng
+          if (connectionState === 'connected') {
+            try {
+              // Đợi WebSocket thực sự OPEN để tránh race condition
+              await services.waitForReady(3000);
+              console.log('[Lobby] WebSocket ready, sending room list request');
+              const sent = loadRoomList();
+              if (sent) {
+                console.log('[Lobby] Room list request sent successfully');
+                break; // Thành công, thoát khỏi retry loop
+              } else {
+                console.warn('[Lobby] Failed to send room list request, will retry');
+              }
+            } catch (waitError) {
+              console.warn('[Lobby] waitForReady failed:', waitError);
+              // Tiếp tục retry
+            }
+          } else {
+            // Nếu chưa kết nối, kết nối trước rồi mới gửi request
+            console.log('[Lobby] Not connected, connecting...');
+            await services.connect();
+            try {
+              // Đợi WebSocket thực sự sẵn sàng sau khi connect
+              await services.waitForReady(3000);
+              console.log('[Lobby] WebSocket ready after connect, sending room list request');
+              const sent = loadRoomList();
+              if (sent) {
+                console.log('[Lobby] Room list request sent successfully');
+                break; // Thành công, thoát khỏi retry loop
+              } else {
+                console.warn('[Lobby] Failed to send room list request, will retry');
+              }
+            } catch (waitError) {
+              console.warn('[Lobby] waitForReady failed after connect:', waitError);
+              // Tiếp tục retry
+            }
+          }
+          
+          retryCount++;
+          if (retryCount < MAX_RETRIES) {
+            console.log(`[Lobby] Retrying in 500ms... (${retryCount}/${MAX_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (error) {
+          console.error('[Lobby] Connection error:', error);
+          retryCount++;
+          if (retryCount < MAX_RETRIES) {
+            console.log(`[Lobby] Retrying after error in 500ms... (${retryCount}/${MAX_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } else {
+            setError('Không thể kết nối đến server. Vui lòng thử lại.');
+            setIsLoadingRooms(false);
+          }
+        }
+      }
+      
+      if (retryCount >= MAX_RETRIES) {
+        console.error('[Lobby] Failed to send room list request after', MAX_RETRIES, 'retries');
+        setError('Không thể tải danh sách phòng. Vui lòng thử lại.');
         setIsLoadingRooms(false);
       }
     })();
@@ -180,7 +243,16 @@ export default function Lobby({ onJoinRoom, onCreateRoom, rooms = [] }) {
       timeoutRef.current = null;
     }, 10000);
 
-    services.getRoomList();
+    const sent = services.getRoomList();
+    console.log('[Lobby] getRoomList() returned:', sent);
+    
+    if (!sent) {
+      console.warn('[Lobby] getRoomList() returned false, message may be queued');
+      // Message đã được queue, sẽ được gửi khi connection sẵn sàng
+      // Không cần xử lý lỗi ở đây vì message queue sẽ tự động gửi
+    }
+    
+    return sent;
   };
 
   const handleJoinRoom = (roomId) => {

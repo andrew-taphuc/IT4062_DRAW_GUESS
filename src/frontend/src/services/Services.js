@@ -61,8 +61,14 @@ class Services {
                         this.reconnectTimer = null;
                     }
 
-                    // Gửi các message đã được queue
-                    this.processMessageQueue();
+                    // Đợi một chút để đảm bảo WebSocket thực sự sẵn sàng
+                    // Rồi mới gửi các message đã được queue
+                    setTimeout(() => {
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            console.log('[Services] Processing message queue,', this.messageQueue.length, 'messages');
+                            this.processMessageQueue();
+                        }
+                    }, 50);
 
                     resolve(true);
                 };
@@ -129,6 +135,112 @@ class Services {
         try {
             const message = JSON.parse(event.data);
             console.log('[Services] Received message:', message.type, message);
+            
+            // Xử lý server shutdown - đăng xuất và xóa thông tin ngay lập tức
+            if (message.type === 'server_shutdown') {
+                console.warn('[Services] Server đang tắt. Đăng xuất và xóa thông tin...');
+                
+                // Import động để tránh circular dependency
+                import('../utils/userStorage').then(({ clearUserData, clearPassword, setAutoLoginEnabled }) => {
+                    clearUserData();
+                    clearPassword();
+                    setAutoLoginEnabled(false);
+                    console.log('[Services] Đã xóa user data và password khỏi storage');
+                }).catch(err => {
+                    console.error('[Services] Lỗi khi xóa user data:', err);
+                });
+                
+                // Reset internal state
+                this.currentRoomId = null;
+                this.roomUpdatesCache.clear();
+                
+                // Ngắt kết nối WebSocket
+                this.disconnect();
+                
+                // Trigger callback để các component có thể xử lý (trước khi redirect)
+                if (this.callbacks.has('server_shutdown')) {
+                    const callbackSet = this.callbacks.get('server_shutdown');
+                    if (callbackSet instanceof Set) {
+                        callbackSet.forEach(callback => {
+                            try {
+                                callback(message.data);
+                            } catch (err) {
+                                console.error('Server shutdown callback error:', err);
+                            }
+                        });
+                    } else {
+                        try {
+                            callbackSet(message.data);
+                        } catch (err) {
+                            console.error('Server shutdown callback error:', err);
+                        }
+                    }
+                }
+                
+                // Chuyển về trang đăng nhập sau một chút delay để đảm bảo callbacks được xử lý
+                setTimeout(() => {
+                    // Sử dụng window.location để đảm bảo redirect hoạt động từ mọi nơi
+                    if (window.location.pathname !== '/') {
+                        window.location.href = '/';
+                    }
+                }, 100);
+                
+                // Không tiếp tục xử lý message này
+                return;
+            }
+            
+            // Xử lý account logged in elsewhere - đăng xuất và xóa thông tin
+            if (message.type === 'account_logged_in_elsewhere') {
+                console.warn('[Services] Tài khoản đang được đăng nhập ở nơi khác. Đăng xuất...');
+                
+                // Import động để tránh circular dependency
+                import('../utils/userStorage').then(({ clearUserData, clearPassword, setAutoLoginEnabled }) => {
+                    clearUserData();
+                    clearPassword();
+                    setAutoLoginEnabled(false);
+                    console.log('[Services] Đã xóa user data và password khỏi storage');
+                }).catch(err => {
+                    console.error('[Services] Lỗi khi xóa user data:', err);
+                });
+                
+                // Reset internal state
+                this.currentRoomId = null;
+                this.roomUpdatesCache.clear();
+                
+                // Ngắt kết nối WebSocket
+                this.disconnect();
+                
+                // Trigger callback để các component có thể xử lý (trước khi redirect)
+                if (this.callbacks.has('account_logged_in_elsewhere')) {
+                    const callbackSet = this.callbacks.get('account_logged_in_elsewhere');
+                    if (callbackSet instanceof Set) {
+                        callbackSet.forEach(callback => {
+                            try {
+                                callback(message.data);
+                            } catch (err) {
+                                console.error('Account logged in elsewhere callback error:', err);
+                            }
+                        });
+                    } else {
+                        try {
+                            callbackSet(message.data);
+                        } catch (err) {
+                            console.error('Account logged in elsewhere callback error:', err);
+                        }
+                    }
+                }
+                
+                // Chuyển về trang đăng nhập sau một chút delay để đảm bảo callbacks được xử lý
+                setTimeout(() => {
+                    // Sử dụng window.location để đảm bảo redirect hoạt động từ mọi nơi
+                    if (window.location.pathname !== '/') {
+                        window.location.href = '/';
+                    }
+                }, 100);
+                
+                // Không tiếp tục xử lý message này
+                return;
+            }
             
             // Cache room updates for later replay
             if (message.type === 'room_players_update' && message.data?.room_id) {
@@ -270,9 +382,28 @@ class Services {
      * Xử lý message queue khi kết nối lại
      */
     processMessageQueue() {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.warn('[Services] Cannot process message queue - WebSocket not ready');
+            return;
+        }
+
+        let processed = 0;
         while (this.messageQueue.length > 0) {
             const message = this.messageQueue.shift();
-            this.send(message);
+            const sent = this.send(message);
+            if (sent) {
+                processed++;
+                console.log('[Services] Sent queued message:', message.type);
+            } else {
+                // Nếu không gửi được, đưa lại vào queue
+                this.messageQueue.unshift(message);
+                console.warn('[Services] Failed to send queued message:', message.type, '- re-queued');
+                break;
+            }
+        }
+        
+        if (processed > 0) {
+            console.log('[Services] Processed', processed, 'queued messages');
         }
     }
 
@@ -351,7 +482,9 @@ class Services {
      * Gửi message đến server
      */
     send(message) {
-        if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        // Kiểm tra WebSocket thực sự sẵn sàng (OPEN) trước khi gửi
+        // Tránh race condition khi connection vừa được thiết lập
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             // Queue message để gửi sau khi kết nối
             this.messageQueue.push(message);
 
@@ -360,6 +493,12 @@ class Services {
                 this.connect().catch(console.error);
             }
 
+            return false;
+        }
+
+        // Kiểm tra lại isConnected để đảm bảo consistency
+        if (!this.isConnected) {
+            this.messageQueue.push(message);
             return false;
         }
 
@@ -696,6 +835,100 @@ class Services {
             case WebSocket.CLOSED: return 'disconnected';
             default: return 'unknown';
         }
+    }
+
+    /**
+     * Đợi WebSocket thực sự sẵn sàng (OPEN) trước khi gửi message
+     * Giúp tránh race condition khi connection vừa được thiết lập
+     */
+    async waitForReady(timeoutMs = 2000) {
+        return new Promise((resolve, reject) => {
+            // Nếu đã sẵn sàng, resolve ngay
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                resolve(true);
+                return;
+            }
+
+            // Nếu chưa có WebSocket, đợi một chút rồi kiểm tra lại
+            if (!this.ws) {
+                // Nếu đang trong quá trình kết nối, đợi một chút
+                if (this.isConnecting || this.connectionPromise) {
+                    let attempts = 0;
+                    const maxAttempts = Math.floor(timeoutMs / 50);
+                    
+                    const checkWebSocket = () => {
+                        attempts++;
+                        
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            resolve(true);
+                            return;
+                        }
+                        
+                        if (this.ws && this.ws.readyState === WebSocket.CLOSED) {
+                            reject(new Error('WebSocket closed while waiting'));
+                            return;
+                        }
+                        
+                        if (attempts >= maxAttempts) {
+                            reject(new Error('WebSocket ready timeout - no WebSocket instance'));
+                            return;
+                        }
+                        
+                        setTimeout(checkWebSocket, 50);
+                    };
+                    
+                    checkWebSocket();
+                    return;
+                } else {
+                    reject(new Error('WebSocket is not initialized'));
+                    return;
+                }
+            }
+
+            // Nếu WebSocket đã đóng, reject
+            if (this.ws.readyState === WebSocket.CLOSED) {
+                reject(new Error('WebSocket is closed'));
+                return;
+            }
+
+            // Nếu đang trong quá trình đóng, reject
+            if (this.ws.readyState === WebSocket.CLOSING) {
+                reject(new Error('WebSocket is closing'));
+                return;
+            }
+
+            let attempts = 0;
+            const maxAttempts = Math.floor(timeoutMs / 50); // Kiểm tra mỗi 50ms
+
+            const checkReady = () => {
+                attempts++;
+                
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    resolve(true);
+                    return;
+                }
+
+                if (this.ws && this.ws.readyState === WebSocket.CLOSED) {
+                    reject(new Error('WebSocket closed while waiting'));
+                    return;
+                }
+
+                if (this.ws && this.ws.readyState === WebSocket.CLOSING) {
+                    reject(new Error('WebSocket closing while waiting'));
+                    return;
+                }
+
+                if (attempts >= maxAttempts) {
+                    reject(new Error(`WebSocket ready timeout after ${timeoutMs}ms (state: ${this.ws?.readyState})`));
+                    return;
+                }
+
+                // Kiểm tra lại sau 50ms
+                setTimeout(checkReady, 50);
+            };
+
+            checkReady();
+        });
     }
 
     /**

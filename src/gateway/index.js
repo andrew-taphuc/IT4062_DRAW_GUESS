@@ -376,6 +376,12 @@ class Gateway {
             case 0x41: // GAME_HISTORY_RESPONSE
                 parsedData = this.parseGameHistoryResponse(payload);
                 break;
+            case 0x50: // SERVER_SHUTDOWN
+                parsedData = { message: 'Server đang tắt. Vui lòng đăng nhập lại sau.' };
+                break;
+            case 0x51: // ACCOUNT_LOGGED_IN_ELSEWHERE
+                parsedData = { message: 'Tài khoản của bạn đang được đăng nhập ở nơi khác.' };
+                break;
             default:
                 Logger.warn('Unknown message type from server:', type);
                 parsedData = { raw: payload.toString('hex') };
@@ -431,6 +437,8 @@ class Gateway {
             0x23: 'draw_broadcast',
             0x41: 'game_history_response',
             0x31: 'chat_broadcast',
+            0x50: 'server_shutdown',
+            0x51: 'account_logged_in_elsewhere',
             // import các message khác ở đây
         };
         return types[type] || 'unknown';

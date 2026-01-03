@@ -91,5 +91,12 @@ int server_broadcast_to_room(server_t* server, int room_id, uint8_t msg_type,
                              const uint8_t* payload, uint16_t payload_len, 
                              int exclude_user_id);
 
+/**
+ * Broadcast thông báo server shutdown đến tất cả clients đang kết nối
+ * @param server Con trỏ đến server_t
+ * @return Số lượng clients đã nhận được message, -1 nếu lỗi
+ */
+int server_broadcast_shutdown(server_t* server);
+
 #endif // SERVER_H
 

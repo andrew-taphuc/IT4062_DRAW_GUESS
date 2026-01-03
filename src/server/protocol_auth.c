@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 // External database connection (tu main.c)
 extern db_connection_t* db;
@@ -48,35 +49,13 @@ int protocol_send_register_response(int client_fd, uint8_t status, const char* m
 }
 
 /**
- * Kiem tra user da dang nhap va dang active khong
- * @param server Con tro den server_t
- * @param user_id User ID can kiem tra
- * @param exclude_client_index Client index can loai tru (thuong la client hien tai)
- * @return 1 neu user da dang nhap va active, 0 neu chua
+ * Gui thong bao tai khoan dang duoc dang nhap o noi khac
  */
-static int protocol_is_user_already_logged_in(server_t* server, int user_id, int exclude_client_index) {
-    if (!server || user_id <= 0) {
-        return 0;
-    }
-
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        // Bo qua client hien tai
-        if (i == exclude_client_index) {
-            continue;
-        }
-
-        client_t* client = &server->clients[i];
-        
-        // Kiem tra client dang active, da dang nhap voi cung user_id va state = LOGGED_IN
-        if (client->active && 
-            client->user_id == user_id && 
-            client->state == CLIENT_STATE_LOGGED_IN) {
-            return 1;  // User da dang nhap
-        }
-    }
-
-    return 0;  // User chua dang nhap
+int protocol_send_account_logged_in_elsewhere(int client_fd) {
+    // Message khong co payload
+    return protocol_send_message(client_fd, MSG_ACCOUNT_LOGGED_IN_ELSEWHERE, NULL, 0);
 }
+
 
 /**
  * Xu ly LOGIN_REQUEST
@@ -136,15 +115,48 @@ int protocol_handle_login(server_t* server, int client_index, const message_t* m
     
     if (user_id > 0) {
         // Kiem tra user da dang nhap va dang active chua
-        if (protocol_is_user_already_logged_in(server, user_id, client_index)) {
+        int old_client_index = -1;
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            if (i == client_index) {
+                continue;
+            }
+            client_t* old_client = &server->clients[i];
+            if (old_client->active && 
+                old_client->user_id == user_id && 
+                old_client->state == CLIENT_STATE_LOGGED_IN) {
+                old_client_index = i;
+                break;
+            }
+        }
+        
+        if (old_client_index >= 0) {
             // User da dang nhap o client khac
-            protocol_send_login_response(client->fd, STATUS_ERROR, -1, "");
-            printf("Client %d dang nhap that bai: user_id=%d (username=%s) da dang nhap o client khac\n", 
-                   client_index, user_id, username);
-            return -1;
+            // Gui thong bao cho client cu truoc khi disconnect
+            client_t* old_client = &server->clients[old_client_index];
+            int send_result = protocol_send_account_logged_in_elsewhere(old_client->fd);
+            if (send_result == 0) {
+                printf("Gui thong bao account_logged_in_elsewhere den client %d (user_id=%d, username=%s)\n",
+                       old_client_index, user_id, old_client->username);
+                
+                // Flush socket để đảm bảo message được gửi
+                // shutdown(SHUT_WR) sẽ đảm bảo dữ liệu được flush trước khi đóng
+                shutdown(old_client->fd, SHUT_WR);
+                
+                // Đợi một chút để đảm bảo message được gửi qua gateway
+                // Sử dụng usleep (microseconds) - 100ms = 100000 microseconds
+                usleep(100000);
+            } else {
+                printf("Loi khi gui thong bao account_logged_in_elsewhere den client %d\n", old_client_index);
+            }
+            
+            // Ngat ket noi client cu (se tu dong cleanup room, etc.)
+            // server_remove_client() sẽ đóng socket (đã shutdown ở trên)
+            server_handle_disconnect(server, old_client_index);
+            printf("Da ngat ket noi client %d (user_id=%d, username=%s) vi dang nhap o noi khac\n",
+                   old_client_index, user_id, old_client->username);
         }
 
-        // Dang nhap thanh cong
+        // Dang nhap thanh cong cho client moi
         client->user_id = user_id;
         strncpy(client->username, username, sizeof(client->username) - 1);
         client->username[sizeof(client->username) - 1] = '\0';

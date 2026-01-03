@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <unistd.h>
 
 server_t server;
 db_connection_t* db = NULL;
@@ -11,7 +12,15 @@ db_connection_t* db = NULL;
 // Xu ly tin hieu de dung server mot cach an toan
 void signal_handler(int sig) {
     (void)sig; // Suppress unused parameter warning
-    printf("\nNhan tin hieu dung, dang dong server...\n");
+    printf("\nNhan tin hieu dung, dang thong bao den tat ca clients...\n");
+    
+    // Broadcast thông báo shutdown đến tất cả clients trước khi đóng
+    server_broadcast_shutdown(&server);
+    
+    // Đợi một chút để đảm bảo message được gửi đi
+    usleep(100000); // 100ms
+    
+    printf("Dang dong server...\n");
     if (db) {
         db_disconnect(db);
         db = NULL;

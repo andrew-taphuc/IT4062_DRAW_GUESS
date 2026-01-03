@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getServices } from '../services/Services';
-import { saveUserData, getUserData, clearUserData, saveAvatar, getAvatar, getCurrentUser } from '../utils/userStorage';
+import { 
+    saveUserData, 
+    getUserData, 
+    clearUserData, 
+    saveAvatar, 
+    getAvatar, 
+    getCurrentUser,
+    savePassword,
+    getPassword,
+    clearPassword,
+    isAutoLoginEnabled,
+    setAutoLoginEnabled
+} from '../utils/userStorage';
 
 /**
  * Custom hook để quản lý authentication state
@@ -15,6 +27,7 @@ export const useAuth = () => {
     useEffect(() => {
         const service = services.current;
         let isMounted = true; // Flag để tránh state update sau khi unmount
+        let autoLoginAttempted = false; // Flag để tránh auto login nhiều lần
         
         // Khôi phục user data từ localStorage nếu có
         const savedUserData = getCurrentUser();
@@ -61,11 +74,17 @@ export const useAuth = () => {
                 // Lưu thông tin user vào localStorage để persist
                 saveUserData(userData);
                 
+                // Bật auto login để tự động đăng nhập lại khi reload
+                setAutoLoginEnabled(true);
+                
                 setUser(userData);
                 setError(null);
             } else {
                 setError('Tài khoản hoặc mật khẩu không đúng');
                 setUser(null);
+                // Xóa password và tắt auto login nếu đăng nhập thất bại
+                clearPassword();
+                setAutoLoginEnabled(false);
             }
         };
 
@@ -91,10 +110,41 @@ export const useAuth = () => {
             setError('Mất kết nối với server');
         };
 
+        const handleServerShutdown = (data) => {
+            if (!isMounted) return;
+            console.warn('[useAuth] Server đang tắt. Đăng xuất người dùng...');
+            // Services đã xóa localStorage và disconnect, chỉ cần cập nhật state
+            // Gọi logout để đảm bảo state được reset đầy đủ
+            setUser(null);
+            setIsConnected(false);
+            setIsLoading(false);
+            setError(data?.message || 'Server đang tắt. Vui lòng đăng nhập lại sau.');
+            // Xóa password và tắt auto login khi server shutdown
+            clearPassword();
+            setAutoLoginEnabled(false);
+            // Services.js sẽ tự động redirect về trang đăng nhập
+        };
+
+        const handleAccountLoggedInElsewhere = (data) => {
+            if (!isMounted) return;
+            console.warn('[useAuth] Tài khoản đang được đăng nhập ở nơi khác. Đăng xuất...');
+            // Services đã xóa localStorage và disconnect, chỉ cần cập nhật state
+            setUser(null);
+            setIsConnected(false);
+            setIsLoading(false);
+            setError(data?.message || 'Tài khoản của bạn đang được đăng nhập ở nơi khác. Vui lòng đăng nhập lại.');
+            // Xóa password và tắt auto login
+            clearPassword();
+            setAutoLoginEnabled(false);
+            // Services.js sẽ tự động redirect về trang đăng nhập
+        };
+
         service.subscribe('login_response', handleLoginResponse);
         service.subscribe('register_response', handleRegisterResponse);
         service.subscribe('error', handleError);
         service.subscribe('connection_failed', handleConnectionFailed);
+        service.subscribe('server_shutdown', handleServerShutdown);
+        service.subscribe('account_logged_in_elsewhere', handleAccountLoggedInElsewhere);
 
         // Cleanup
         return () => {
@@ -105,6 +155,8 @@ export const useAuth = () => {
             service.unsubscribe('register_response', handleRegisterResponse);
             service.unsubscribe('error', handleError);
             service.unsubscribe('connection_failed', handleConnectionFailed);
+            service.unsubscribe('server_shutdown', handleServerShutdown);
+            service.unsubscribe('account_logged_in_elsewhere', handleAccountLoggedInElsewhere);
             
             // Chỉ disconnect nếu không còn subscribers nào khác
             // Điều này giúp tránh việc disconnect không cần thiết trong StrictMode
@@ -113,6 +165,87 @@ export const useAuth = () => {
             }
         };
     }, []);
+
+    // Ref để track auto-login đã được thử chưa
+    const autoLoginAttempted = useRef(false);
+    
+    // Auto-login effect - tự động đăng nhập lại khi reload nếu có thông tin đã lưu
+    useEffect(() => {
+        const service = services.current;
+        let isMounted = true;
+        
+        // Chỉ auto-login một lần khi component mount
+        if (autoLoginAttempted.current) {
+            return;
+        }
+        
+        // Kiểm tra xem có nên tự động đăng nhập lại không
+        const savedUserData = getCurrentUser();
+        if (!savedUserData || !isAutoLoginEnabled()) {
+            return;
+        }
+        
+        const savedPassword = getPassword();
+        if (!savedPassword || !savedUserData.username) {
+            return;
+        }
+        
+        // Kiểm tra xem đã kết nối chưa
+        const currentState = service.getConnectionState();
+        if (currentState === 'connected' || currentState === 'connecting') {
+            // Đã kết nối hoặc đang kết nối, không cần auto-login
+            return;
+        }
+        
+        autoLoginAttempted.current = true;
+        console.log('[useAuth] Tự động đăng nhập lại sau khi reload...');
+        
+        // Tự động kết nối và đăng nhập lại
+        (async () => {
+            try {
+                if (isMounted) {
+                    setIsLoading(true);
+                    setError(null);
+                }
+                
+                // Kết nối đến server
+                await service.connect();
+                
+                if (isMounted) {
+                    setIsConnected(true);
+                }
+                
+                // Gọi login function (sẽ được định nghĩa sau)
+                // Sử dụng service trực tiếp để tránh circular dependency
+                const loginSuccess = service.login(
+                    savedUserData.username,
+                    savedPassword,
+                    savedUserData.avatar || getAvatar()
+                );
+                
+                if (!loginSuccess && isMounted) {
+                    setIsLoading(false);
+                    setError('Không thể tự động đăng nhập lại');
+                    // Xóa password nếu đăng nhập thất bại
+                    clearPassword();
+                    setAutoLoginEnabled(false);
+                }
+            } catch (err) {
+                console.error('[useAuth] Lỗi khi tự động đăng nhập lại:', err);
+                if (isMounted) {
+                    setIsLoading(false);
+                    setIsConnected(false);
+                    setError('Không thể kết nối đến server');
+                    clearPassword();
+                    setAutoLoginEnabled(false);
+                }
+            }
+        })();
+        
+        return () => {
+            isMounted = false;
+        };
+    }, []); // Chỉ chạy một lần khi mount
 
     const login = async (username, password, avatar) => {
         const service = services.current;
@@ -137,10 +270,14 @@ export const useAuth = () => {
         setIsLoading(true);
         setError(null);
 
+        // Lưu password vào sessionStorage để tự động đăng nhập lại khi reload
+        savePassword(password);
+
         const success = services.current.login(username, password, avatar);
         if (!success) {
             setIsLoading(false);
             setError('Không thể gửi yêu cầu đăng nhập');
+            clearPassword(); // Xóa password nếu gửi request thất bại
             return false;
         }
 
@@ -184,6 +321,9 @@ export const useAuth = () => {
         services.current.logout();
         // Xóa user data khỏi localStorage nhưng giữ lại avatar
         clearUserData();
+        // Xóa password và tắt auto login khi logout
+        clearPassword();
+        setAutoLoginEnabled(false);
         setUser(null);
         setError(null);
     };

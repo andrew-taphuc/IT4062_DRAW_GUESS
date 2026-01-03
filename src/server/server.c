@@ -84,21 +84,27 @@ int server_add_client(server_t *server, int client_fd) {
     
     // Thiet lap TCP keepalive parameters (optional, nhung tot cho VPS)
     // idle time trước khi bắt đầu gửi keepalive probes: 60 giây
-    int keepidle = 60;
     // Interval giữa các keepalive probes: 10 giây
-    int keepintvl = 10;
     // Số probes trước khi đóng connection: 3
-    int keepcnt = 3;
     
     // Chỉ set nếu hệ thống hỗ trợ (Linux)
     #ifdef TCP_KEEPIDLE
-    setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle));
+    {
+        int keepidle = 60;
+        setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle));
+    }
     #endif
     #ifdef TCP_KEEPINTVL
-    setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl));
+    {
+        int keepintvl = 10;
+        setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl));
+    }
     #endif
     #ifdef TCP_KEEPCNT
-    setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPCNT, &keepcnt, sizeof(keepcnt));
+    {
+        int keepcnt = 3;
+        setsockopt(client_fd, IPPROTO_TCP, TCP_KEEPCNT, &keepcnt, sizeof(keepcnt));
+    }
     #endif
     
     for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -131,7 +137,15 @@ int server_add_client(server_t *server, int client_fd) {
 // Xoa client khoi danh sach
 void server_remove_client(server_t *server, int client_index) {
     if (client_index >= 0 && client_index < MAX_CLIENTS && server->clients[client_index].active) {
-        close(server->clients[client_index].fd);
+        int fd = server->clients[client_index].fd;
+        
+        // Shutdown write để đảm bảo dữ liệu được gửi trước khi đóng
+        // Điều này đảm bảo message được flush trước khi close
+        shutdown(fd, SHUT_WR);
+        
+        // Đóng socket
+        close(fd);
+        
         server->clients[client_index].active = 0;
         server->clients[client_index].fd = -1;
         server->clients[client_index].user_id = -1;
@@ -258,6 +272,34 @@ int server_broadcast_to_room(server_t* server, int room_id, uint8_t msg_type,
     printf("Da broadcast message type 0x%02X den phong '%s' (ID: %d) - %d clients nhan duoc\n",
            msg_type, room->room_name, room_id, sent_count);
     
+    return sent_count;
+}
+
+/**
+ * Broadcast thông báo server shutdown đến tất cả clients đang kết nối
+ */
+int server_broadcast_shutdown(server_t* server) {
+    if (!server) {
+        return -1;
+    }
+
+    // Message shutdown không cần payload
+    const uint8_t* payload = NULL;
+    uint16_t payload_len = 0;
+
+    int sent_count = 0;
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        client_t* client = &server->clients[i];
+        
+        // Chỉ gửi đến clients đang active
+        if (client->active) {
+            if (protocol_send_message(client->fd, MSG_SERVER_SHUTDOWN, payload, payload_len) == 0) {
+                sent_count++;
+            }
+        }
+    }
+
+    printf("Da broadcast server shutdown den %d clients\n", sent_count);
     return sent_count;
 }
 
