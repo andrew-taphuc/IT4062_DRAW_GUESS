@@ -400,8 +400,29 @@ int protocol_process_guess(server_t* server, int client_index, room_t* room, con
     // Frontend sẽ cập nhật điểm từ CORRECT_GUESS message
     // ROOM_PLAYERS_UPDATE chỉ dùng để cập nhật danh sách người chơi, không phải scores
 
-    // KHÔNG kết thúc round ngay, để những người khác vẫn có thể đoán cho đến hết giờ
-    // Round sẽ kết thúc khi timeout (trong server tick)
+    // Kiểm tra xem tất cả người chơi (trừ người vẽ) đã đoán đúng chưa
+    // Nếu đã đoán đúng hết, kết thúc round sớm và chuyển sang lượt tiếp theo
+    if (room->game && !room->game->game_ended) {
+        int total_guessers = room->player_count - 1; // Tổng số người cần đoán (trừ người vẽ)
+        int guessed_count = room->game->guessed_count; // Số người đã đoán đúng
+        
+        if (total_guessers > 0 && guessed_count >= total_guessers) {
+            printf("[PROTOCOL] Tất cả người chơi (trừ người vẽ) đã đoán đúng. Kết thúc round sớm.\n");
+            // Lưu word trước khi game_end_round xóa nó
+            char word_before_clear[64];
+            memset(word_before_clear, 0, sizeof(word_before_clear));
+            strncpy(word_before_clear, current_word, sizeof(word_before_clear) - 1);
+            
+            // Kết thúc round với success = true
+            game_end_round(room->game, true, -1);
+            
+            // Broadcast round_end và chuyển sang round tiếp theo
+            protocol_handle_round_timeout(server, room, word_before_clear);
+            return 0;
+        }
+    }
+
+    // Nếu chưa đủ người đoán đúng, tiếp tục chờ đến hết giờ
     return 0;
 }
 
