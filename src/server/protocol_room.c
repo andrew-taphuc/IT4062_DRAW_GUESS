@@ -1,11 +1,15 @@
 #include "../include/protocol.h"
 #include "../include/room.h"
 #include "../include/game.h"
+#include "../include/server.h"
 #include "../common/protocol.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+
+// Forward declaration
+int protocol_broadcast_game_end(server_t* server, room_t* room);
 
 /**
  * Gui CREATE_ROOM_RESPONSE
@@ -811,6 +815,9 @@ int protocol_handle_leave_room(server_t *server, int client_index, const message
         word_before[sizeof(word_before) - 1] = '\0';
     }
 
+    // Lưu thông tin game trước khi xóa người chơi (để broadcast game_end nếu game kết thúc)
+    bool was_playing_before = (room->state == ROOM_PLAYING && room->game != NULL);
+    
     // Xoa nguoi choi khoi phong
     if (!room_remove_player(room, client->user_id))
     {
@@ -834,6 +841,20 @@ int protocol_handle_leave_room(server_t *server, int client_index, const message
         if (room->active_players[i] == 1) {
             active_count++;
         }
+    }
+    
+    // Nếu đang chơi game và số người active < 2, cần kết thúc game
+    bool should_end_game = (was_playing_before && room->game != NULL && active_count < 2);
+    
+    // Nếu cần kết thúc game do thiếu người chơi, broadcast game_end trước
+    if (should_end_game && room->game) {
+        printf("[PROTOCOL] Game ket thuc do nguoi choi roi phong (active < 2). Broadcasting game_end.\n");
+        // Đánh dấu game đã kết thúc trước khi broadcast
+        room->game->game_ended = true;
+        // Broadcast game_end để frontend hiển thị leaderboard
+        protocol_broadcast_game_end(server, room);
+        // Sau đó mới end game và destroy
+        room_end_game(room);
     }
     
     // Neu phong trong hoặc không còn người chơi active nào, xoa phong
@@ -873,7 +894,8 @@ int protocol_handle_leave_room(server_t *server, int client_index, const message
     }
 
     // Xu ly drawer roi phong trong game (sau khi da broadcast danh sach players)
-    if (was_drawer && room->game && word_before[0] != '\0') {
+    // Chỉ xử lý nếu game chưa kết thúc
+    if (was_drawer && room->game && word_before[0] != '\0' && !should_end_game) {
         // End round hiện tại trước (để đảm bảo round được đếm đúng)
         game_end_round(room->game, false, -1);
         // Sau đó mới bắt đầu round mới

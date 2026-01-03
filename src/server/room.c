@@ -241,10 +241,11 @@ bool room_remove_player(room_t *room, int user_id)
             }
         }
         
-        // Neu con < 2 nguoi choi active thi end game ngay de tranh treo state
+        // Neu con < 2 nguoi choi active thi can end game
+        // Nhưng không gọi room_end_game ở đây, để nơi gọi có thể broadcast game_end trước
         if (active_count < 2) {
-            room_end_game(room);
-            printf("Game ket thuc do khong du nguoi choi active\n");
+            printf("Game can ket thuc do khong du nguoi choi active (active: %d)\n", active_count);
+            // Trả về true nhưng game sẽ được end ở nơi gọi sau khi broadcast
         }
         
         return true;

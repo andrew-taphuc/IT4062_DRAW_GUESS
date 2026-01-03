@@ -309,6 +309,21 @@ int protocol_handle_logout(server_t* server, int client_index, const message_t* 
                 }
             }
             
+            // Nếu đang chơi game và số người active < 2, cần kết thúc game
+            bool should_end_game = (was_playing && room->game != NULL && active_count < 2);
+            
+            // Nếu cần kết thúc game do thiếu người chơi, broadcast game_end trước
+            if (should_end_game && room->game) {
+                printf("[PROTOCOL_AUTH] Game ket thuc do nguoi choi logout (active < 2). Broadcasting game_end.\n");
+                // Đánh dấu game đã kết thúc trước khi broadcast
+                room->game->game_ended = true;
+                // Broadcast game_end để frontend hiển thị leaderboard
+                extern int protocol_broadcast_game_end(server_t* server, room_t* room);
+                protocol_broadcast_game_end(server, room);
+                // Sau đó mới end game và destroy
+                room_end_game(room);
+            }
+            
             if (room->player_count == 0 || active_count == 0) {
                 // Xoa room khoi server
                 for (int i = 0; i < MAX_ROOMS; i++) {
@@ -339,7 +354,8 @@ int protocol_handle_logout(server_t* server, int client_index, const message_t* 
             }
             
             // Xu ly drawer roi phong trong game (sau khi da broadcast danh sach players)
-            if (was_drawer && room->game && word_before[0] != '\0') {
+            // Chỉ xử lý nếu game chưa kết thúc
+            if (was_drawer && room->game && word_before[0] != '\0' && !should_end_game) {
                 // End round hiện tại trước (để đảm bảo round được đếm đúng)
                 game_end_round(room->game, false, -1);
                 // Sau đó mới bắt đầu round mới

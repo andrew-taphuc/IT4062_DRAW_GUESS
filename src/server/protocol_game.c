@@ -146,7 +146,7 @@ static int broadcast_round_end(server_t* server, room_t* room, const char* word)
     return server_broadcast_to_room(server, room->room_id, MSG_ROUND_END, payload, (uint16_t)payload_size, -1);
 }
 
-static int broadcast_game_end(server_t* server, room_t* room) {
+int protocol_broadcast_game_end(server_t* server, room_t* room) {
     if (!server || !room || !room->game) return -1;
     game_state_t* game = room->game;
 
@@ -459,7 +459,7 @@ int protocol_handle_round_timeout(server_t* server, room_t* room, const char* wo
     }
 
     if (room->game->game_ended) {
-        broadcast_game_end(server, room);
+        protocol_broadcast_game_end(server, room);
         room_end_game(room);
         return 0;
     }
@@ -481,7 +481,7 @@ int protocol_handle_round_timeout(server_t* server, room_t* room, const char* wo
         // Kiểm tra game đã kết thúc chưa (game_start_round có thể gọi game_end nếu là round cuối)
         if (room->game->game_ended) {
             // Game đã kết thúc, broadcast và return
-            broadcast_game_end(server, room);
+            protocol_broadcast_game_end(server, room);
             room_end_game(room);
             return 0;
         }
@@ -495,11 +495,11 @@ int protocol_handle_round_timeout(server_t* server, room_t* room, const char* wo
     if (room->game && !room->game->game_ended) {
         printf("[PROTOCOL] Khong the bat dau round: khong co drawer active. Ket thuc game.\n");
         game_end(room->game);
-        broadcast_game_end(server, room);
+        protocol_broadcast_game_end(server, room);
         room_end_game(room);
     } else if (room->game && room->game->game_ended) {
         // Game đã kết thúc trong vòng lặp, broadcast
-        broadcast_game_end(server, room);
+        protocol_broadcast_game_end(server, room);
         room_end_game(room);
     }
     
